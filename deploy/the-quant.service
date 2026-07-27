@@ -1,0 +1,26 @@
+[Unit]
+Description=The Quant — Autonomous Quantitative Trading Platform
+Documentation=https://github.com/the-quant/the-quant
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=quant
+Group=quant
+WorkingDirectory=/home/quant/the-quant
+ExecStart=/home/quant/the-quant/target/release/the-quant daemon
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=3
+CPUQuota=80%
+OOMScoreAdjust=-100
+StandardOutput=journal
+StandardError=journal
+Environment="RUST_LOG=info"
+Environment="RUST_BACKTRACE=1"
+Environment="JEMALLOC_SYS_WITH_MALLOC_CONF=background_thread:true,metadata_thp:auto"
+
+[Install]
+WantedBy=multi-user.target

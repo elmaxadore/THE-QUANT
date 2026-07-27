@@ -1,0 +1,70 @@
+# The Quant — System Configuration
+# This file is auto-generated. Edit with care.
+
+[system]
+# Process capacity as percentage of total RAM (default: 85)
+process_cap_pct = 85
+
+# Log level: trace, debug, info, warn, error
+log_level = "info"
+
+# Data directory (relative to ~/.thequant or absolute)
+data_dir = "~/.thequant/data"
+
+[mt5]
+# ZeroMQ endpoints
+zmq_pub_endpoint = "tcp://127.0.0.1:5555"
+zmq_sub_endpoint = "tcp://127.0.0.1:5556"
+
+# Trading symbols
+symbols = ["EURUSD", "GBPUSD", "XAUUSD", "BTCUSD"]
+
+# Timeframes to track
+timeframes = ["M1", "M5", "M15", "H1", "H4", "D1"]
+
+# MT5 connection: local (Wine) or remote
+mode = "local"  # local | remote
+
+[database]
+host = "127.0.0.1"
+port = 5432
+name = "thequant"
+user = "quant"
+# Password is stored in environment variable QUANT_DB_PASSWORD
+max_connections = 10
+
+[risk]
+# Default risk per trade as percentage of account
+default_risk_per_trade_pct = 0.5
+
+# Maximum drawdown percentage of account
+max_drawdown_pct = 15.0
+
+# Position sizing defaults
+default_slippage_tolerance_atr = 0.5
+
+[model]
+# Base directory for models
+models_dir = "~/.thequant/models"
+
+# Training parameters
+max_trees = 1000
+max_depth = 6
+early_stopping_patience = 20
+
+[evolution]
+# Trigger thresholds
+min_trades_between_cycles = 20
+hours_between_cycles = 168  # 7 days
+performance_ratio_threshold = 0.5
+
+[github]
+enabled = false
+# repo_url = "https://github.com/your-org/the-quant.git"
+# pat stored in environment variable QUANT_GITHUB_PAT
+
+[ui]
+# TUI enabled by default (set false for headless mode)
+tui_enabled = true
+# Auto-lock after N minutes of inactivity
+auto_lock_minutes = 5
