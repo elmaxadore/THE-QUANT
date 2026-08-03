@@ -1,11 +1,11 @@
 [package]
 name = "the-quant"
-version = "2.1.0"
+version = "3.0.0"
 edition = "2021"
 description = "Percentage-Scaled, Zero-Copy Autonomous Quantitative Trading Platform"
 authors = ["The Quant Team"]
 license = "MIT"
-repository = "https://github.com/quant/the-quant"
+repository = "https://github.com/TheQuantCompany/the-quant"
 rust-version = "1.78"
 
 [profile.release]
@@ -73,6 +73,11 @@ sha2 = "0.10"
 
 # HTTP / API
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tokio-tungstenite = "0.24"
+rust-embed = "8"
 
 # GitHub
 octocrab = "0.39"

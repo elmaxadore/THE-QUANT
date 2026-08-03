@@ -1,0 +1,45 @@
+# FTMO Prop Firm Account Template
+# =============================================================================
+# Two-step evaluation: Challenge (Step 1) then Verification (Step 2),
+# followed by a funded FTMO Account with up to 80% profit split.
+
+[meta]
+template_id = "ftmo_challenge"
+provider = "FTMO"
+version = "1.0"
+description = "FTMO Challenge 100k EUR (standard rules)"
+
+[account]
+account_type = "PropFirm"
+stage = "Evaluation"
+leverage = 100
+default_currency = "EUR"
+
+[account.default_rules]
+max_drawdown_pct = 10.0            # 10% max overall drawdown
+profit_target_pct = 10.0           # 10% profit target for Challenge
+time_limit_days = 30
+min_trading_days = 4
+daily_loss_limit_pct = 5.0         # 5% daily loss limit
+max_lot_size = 40.0
+news_trading = "Restricted"
+weekend_hold = false
+hedging_allowed = false
+
+[risk]
+risk_per_trade_pct = 0.5
+max_correlated_group_exposure_pct = 2.0
+default_slippage_tolerance_atr = 0.5
+
+[targets]
+monthly_return_pct = 10.0
+max_drawdown_pct = 5.0
+profit_split_pct = 80.0
+
+[verification_stage]
+profit_target_pct = 5.0
+time_limit_days = 60
+min_trading_days = 4
+daily_loss_limit_pct = 5.0
+max_drawdown_pct = 10.0
+

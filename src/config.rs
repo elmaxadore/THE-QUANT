@@ -40,6 +40,8 @@ pub struct QuantConfig {
     pub data: DataConfig,
     /// Security configuration
     pub security: SecurityConfig,
+    /// Web API configuration (v3.0 "Prometheus")
+    pub api: ApiConfig,
 }
 
 impl Default for QuantConfig {
@@ -59,6 +61,7 @@ impl Default for QuantConfig {
             ui: UiConfig::default(),
             data: DataConfig::default(),
             security: SecurityConfig::default(),
+            api: ApiConfig::default(),
         }
     }
 }
@@ -136,8 +139,14 @@ pub struct ModuleBudgets {
     pub model_manager: f64,        // 15%
     pub strategy_engine: f64,      // 6%
     pub risk_engine: f64,          // 3%
-    pub lab: f64,                  // 25%
-    pub tui: f64,                  // 3%
+    pub lab: f64,                  // 22% (v3.0: reduced from 25% to make room for RL)
+    pub rl_gym: f64,               // 5% (v3.0)
+    pub microstructure: f64,       // 2% (v3.0)
+    pub anomaly: f64,              // 1% (v3.0)
+    pub changepoint: f64,          // 0.5% (v3.0)
+    pub math: f64,                 // 0.5% (v3.0)
+    pub tui_web: f64,              // 4% (v3.0: TUI + Web)
+    pub api: f64,                  // 2% (v3.0)
     pub system_overhead: f64,      // 6%
     pub reserve: f64,              // 5%
 }
@@ -150,8 +159,14 @@ impl Default for ModuleBudgets {
             model_manager: 15.0,
             strategy_engine: 6.0,
             risk_engine: 3.0,
-            lab: 25.0,
-            tui: 3.0,
+            lab: 22.0,
+            rl_gym: 5.0,
+            microstructure: 2.0,
+            anomaly: 1.0,
+            changepoint: 0.5,
+            math: 0.5,
+            tui_web: 4.0,
+            api: 2.0,
             system_overhead: 6.0,
             reserve: 5.0,
         }
@@ -443,6 +458,38 @@ pub struct SecurityConfig {
     pub vault_path: PathBuf,
 }
 
+/// Web API configuration (v3.0 "Prometheus")
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ApiConfig {
+    /// Host to bind the HTTP server to
+    pub host: String,
+    /// Port to bind the HTTP server to
+    pub port: u16,
+    /// Enable CORS (for browser-based development)
+    pub cors_enabled: bool,
+    /// Session expiry in minutes
+    pub session_expiry_minutes: u32,
+    /// Enable the onboarding wizard
+    pub wizard_enabled: bool,
+    /// Web dashboard static assets directory
+    pub web_ui_dir: PathBuf,
+}
+
+impl Default for ApiConfig {
+    fn default() -> Self {
+        let home = std::env::var("HOME").unwrap_or_else(|_| "/root".to_string());
+        Self {
+            host: "127.0.0.1".to_string(),
+            port: 8080,
+            cors_enabled: false,
+            session_expiry_minutes: 60,
+            wizard_enabled: true,
+            web_ui_dir: PathBuf::from(&home).join(".thequant").join("web"),
+        }
+    }
+}
+
 impl Default for SecurityConfig {
     fn default() -> Self {
         let home = std::env::var("HOME").unwrap_or_else(|_| "/root".to_string());
@@ -478,7 +525,7 @@ impl QuantConfig {
         Ok(config)
     }
 
-    /// Load configuration from a specific path
+/// Load configuration from a specific path
     pub fn load_from(path: &Path) -> Result<Self, crate::QuantError> {
         let config: QuantConfig = config::Config::builder()
             .add_source(config::File::from(path))
@@ -486,6 +533,16 @@ impl QuantConfig {
             .build()?
             .try_deserialize()?;
         Ok(config)
+    }
+
+    /// Get the API host for the web dashboard.
+    pub fn api_host(&self) -> &str {
+        "127.0.0.1"
+    }
+
+    /// Get the API port for the web dashboard.
+    pub fn api_port(&self) -> u16 {
+        self.api.port
     }
 
     /// Save current configuration to default path

@@ -35,6 +35,15 @@ pub mod execution;
 pub mod evolution;
 pub mod github;
 pub mod tui;
+// v3.0 "Prometheus" modules
+pub mod rl;
+pub mod api;
+pub mod web_ui;
+pub mod microstructure;
+pub mod anomaly;
+pub mod changepoint;
+pub mod math;
+pub mod wizard;
 
 // Re-export commonly used types at crate level
 pub use config::QuantConfig;

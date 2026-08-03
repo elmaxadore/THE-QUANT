@@ -1,0 +1,41 @@
+# Personal Trading Account Template
+# =============================================================================
+# Conservative, long-term oriented settings for self-managed funds.
+
+[meta]
+template_id = "personal_conservative"
+provider = "Self"
+version = "1.0"
+description = "Conservative personal account — capital preservation first"
+
+[account]
+account_type = "Personal"
+stage = "Funded"
+leverage = 30
+default_currency = "USD"
+
+[account.default_rules]
+max_drawdown_pct = 3.0
+profit_target_pct = 3.0
+time_limit_days = 0                 # No time limit for personal accounts
+min_trading_days = 10
+daily_loss_limit_pct = 1.0
+max_lot_size = 2.0
+news_trading = "Restricted"
+weekend_hold = false
+hedging_allowed = false
+
+[risk]
+risk_per_trade_pct = 0.5
+max_correlated_group_exposure_pct = 1.5
+default_slippage_tolerance_atr = 0.5
+
+[targets]
+monthly_return_pct = 2.0
+max_drawdown_pct = 3.0
+profit_split_pct = 100.0
+
+[tax]
+tax_aware = true
+realized_pnl_tracking = true
+
