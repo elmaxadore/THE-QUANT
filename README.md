@@ -38,7 +38,7 @@ A self-contained, autonomous quantitative trading company written entirely in **
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/the-quant.git
+git clone https://github.com/elmaxadore/the-quant.git
 cd the-quant
 
 # Build release binary
