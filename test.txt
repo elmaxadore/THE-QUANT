@@ -1,0 +1,79 @@
+================================================================================
+          THE QUANT — COMPREHENSIVE TESTING & EXECUTION GUIDE (test.txt)
+================================================================================
+
+1. COMMAND TO TEST THE APPLICATION CODEBASE (SYNTAX, LOGIC & UNIT TESTS)
+--------------------------------------------------------------------------------
+Run this single command in your terminal from inside the project directory:
+
+  cargo test --all-targets --no-default-features
+
+Or for a fast compile/syntax check without running tests:
+
+  cargo check --no-default-features
+
+Why --no-default-features?
+This flag uses the standard system memory allocator (std::alloc::System) instead
+of invoking the legacy C jemalloc build script. This completely avoids path-space
+issues when compiling inside directories containing spaces (e.g. "THE QUANT").
+
+
+2. APPLICATION WORKFLOW: LOAD, CONNECT, COLLECT & TRAIN OFFLINE
+--------------------------------------------------------------------------------
+
+STEP 1: Load the Application & Edit Account Details to the Very Dot
+  Launch the interactive onboarding wizard to configure credentials, server,
+  rules, Guardian Shield, Consistency Profile, and Payout Cap:
+
+    cargo run --no-default-features -- wizard
+
+  * Editing Account Details:
+    - Edit files directly in config/rules/ or config/templates/
+    - Modify Guardian Shield parameters (e.g. max_loss_per_trade: $50.00,
+      strike_limit: 2, cooldown_bars: 0, reduction_factor: 0.5)
+    - Modify Consistency parameters (e.g. profit_concentration threshold: 15.0%,
+      lot_size_cv max: 0.40, min hold time)
+    - Modify Payout Cap parameters (e.g. total_cap: $250.00, daily target: $25.00)
+
+STEP 2: Initialize Database Schema & Migrations
+  Initialize PostgreSQL + TimescaleDB tables (hypertables 1 to 22):
+
+    cargo run --no-default-features -- bootstrap
+
+STEP 3: Start the Daemon & Collect Market Data
+  Connect to the MetaTrader 5 ZeroMQ Bridge to stream tick and OHLCV bar data,
+  and log microstructure features into TimescaleDB and Parquet files:
+
+    cargo run --no-default-features -- daemon
+
+STEP 4: Run Offline Training
+  Train all machine learning models offline (fitting the 8 GMM market regimes,
+  GBDT directional predictors, small neural net MLP ensemble, and distilled
+  QuantGym PPO reinforcement learning policy):
+
+    cargo run --no-default-features -- evolve
+
+STEP 5: Launch Terminal UI Dashboard (Optional)
+  Open the real-time interactive terminal dashboard:
+
+    cargo run --no-default-features -- tui
+
+
+3. EDITING ACCOUNT DETAILS DOWN TO THE VERY DOT
+--------------------------------------------------------------------------------
+Every account parameter in The Quant is fully customizable:
+
+- Guardian Shield:
+  `account.guardian_shield.max_loss_per_trade`  (e.g., $50.00 max per-trade loss)
+  `account.guardian_shield.strike_limit`        (e.g., 2 strikes before blown)
+  `account.guardian_shield.reduction_factor`    (e.g., 0.5 size reduction after 1st strike)
+
+- Consistency Profile:
+  `account.consistency_profile.threshold_pct`   (e.g., 15% max single-day profit concentration)
+  `account.consistency_profile.auto_adjust_sizing` (true/false)
+
+- Payout Cap & Extraction Curve:
+  `account.payout_cap.total_cap`                (e.g., $250.00 lifetime max payout)
+  `account.payout_cap.payout_schedule`          (OnDemand / BiWeekly / Monthly)
+
+================================================================================

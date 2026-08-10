@@ -26,6 +26,14 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
+pub mod consistency;
+pub mod payout;
+pub mod shield;
+
+pub use consistency::{ComplianceStatus, ConsistencyEngine, ConsistencyProfile, ConsistencyState};
+pub use payout::{ExtractionState, PayoutCap, PayoutEngine, PayoutSchedule};
+pub use shield::{GuardianShield, ShieldEngine, ShieldState, ShieldStatus};
+
 // === Account Types & Stages ===
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -59,6 +67,9 @@ pub struct Account {
     pub stage: AccountStage,
     pub credentials: EncryptedCredentials,
     pub rules: AccountRules,
+    pub guardian_shield: GuardianShield,
+    pub consistency_profile: ConsistencyProfile,
+    pub payout_cap: PayoutCap,
     pub status: AccountStatus,
     pub metrics: AccountMetrics,
     pub created_at: DateTime<Utc>,
@@ -178,6 +189,9 @@ impl AccountManager {
             stage,
             credentials: encrypted_creds,
             rules,
+            guardian_shield: GuardianShield::default(),
+            consistency_profile: ConsistencyProfile::default(),
+            payout_cap: PayoutCap::default(),
             status: AccountStatus::Active,
             metrics: AccountMetrics::default(),
             created_at: Utc::now(),
@@ -196,6 +210,57 @@ impl AccountManager {
     /// Get all accounts
     pub fn list_accounts(&self) -> Vec<Account> {
         self.accounts.iter().map(|a| a.clone()).collect()
+    }
+
+    /// Full update of an account's details
+    pub fn update_account(&self, mut updated: Account) -> QuantResult<Account> {
+        updated.updated_at = Utc::now();
+        self.accounts.insert(updated.id, updated.clone());
+        Ok(updated)
+    }
+
+    /// Update an account's rules down to the finest detail
+    pub fn update_rules(&self, account_id: &Uuid, rules: AccountRules) -> QuantResult<()> {
+        if let Some(mut account) = self.accounts.get_mut(account_id) {
+            account.rules = rules;
+            account.updated_at = Utc::now();
+            Ok(())
+        } else {
+            Err(QuantError::Internal(format!("Account {} not found", account_id)))
+        }
+    }
+
+    /// Update an account's Guardian Shield configuration (max loss per trade, strike limit, etc.)
+    pub fn update_shield(&self, account_id: &Uuid, shield: GuardianShield) -> QuantResult<()> {
+        if let Some(mut account) = self.accounts.get_mut(account_id) {
+            account.guardian_shield = shield;
+            account.updated_at = Utc::now();
+            Ok(())
+        } else {
+            Err(QuantError::Internal(format!("Account {} not found", account_id)))
+        }
+    }
+
+    /// Update an account's Consistency Profile configuration
+    pub fn update_consistency_profile(&self, account_id: &Uuid, profile: ConsistencyProfile) -> QuantResult<()> {
+        if let Some(mut account) = self.accounts.get_mut(account_id) {
+            account.consistency_profile = profile;
+            account.updated_at = Utc::now();
+            Ok(())
+        } else {
+            Err(QuantError::Internal(format!("Account {} not found", account_id)))
+        }
+    }
+
+    /// Update an account's Payout Cap configuration
+    pub fn update_payout_cap(&self, account_id: &Uuid, cap: PayoutCap) -> QuantResult<()> {
+        if let Some(mut account) = self.accounts.get_mut(account_id) {
+            account.payout_cap = cap;
+            account.updated_at = Utc::now();
+            Ok(())
+        } else {
+            Err(QuantError::Internal(format!("Account {} not found", account_id)))
+        }
     }
 
     /// Update account metrics (called by Risk Engine)
@@ -267,6 +332,7 @@ impl AccountManager {
             .unwrap_or(false)
     }
 }
+
 
 // === Rule Engine ===
 

@@ -1,0 +1,35 @@
+# config/templates/the5ers_high_stakes.yaml
+firm_name: "The5ers"
+variant: "High Stakes Evaluation"
+account_type: PropFirm
+stage: Evaluation
+
+initial_balance: 5000.00
+
+rules:
+  max_drawdown_pct: 10.0
+  daily_loss_limit_pct: 5.0
+  profit_target_pct: 8.0
+  time_limit_days: 0
+  min_trading_days: 3
+  leverage: 100
+  allowed_instruments: [FOREX, METALS, INDICES]
+  news_trading: restricted
+  weekend_hold: false
+  consistency_rule: true
+
+consistency_profile:
+  profit_concentration:
+    enabled: true
+    threshold_pct: 25.0
+    lookback_days: 30
+    enforcement_mode: Hard
+    auto_adjust_sizing: true
+
+guardian_shield:
+  enabled: true
+  max_loss_per_trade: 75.00
+  strike_limit: 3
+  cooldown_bars: 12
+  auto_reduce_size_after_strike: true
+  reduction_factor: 0.5

@@ -231,6 +231,10 @@ run_migrations() {
         PGPASSWORD="${db_password}" ${SUDO} -u postgres psql -d "${DB_NAME}" \
             -f "${INSTALL_DIR}/migrations/002_v3.sql" || true
     fi
+    if [[ -f "${INSTALL_DIR}/migrations/003_v3_1.sql" ]]; then
+        PGPASSWORD="${db_password}" ${SUDO} -u postgres psql -d "${DB_NAME}" \
+            -f "${INSTALL_DIR}/migrations/003_v3_1.sql" || true
+    fi
     log_info "Migrations applied."
 }
 

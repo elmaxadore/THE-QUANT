@@ -45,7 +45,7 @@ parquet = "52"
 
 # Numerical / financial
 rust_decimal = { version = "1", features = ["serde-with-float", "maths"] }
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "=0.4.38", features = ["serde"] }
 
 # Logging / tracing
 tracing = "0.1"
@@ -70,6 +70,8 @@ jsonwebtoken = "9"
 secrecy = { version = "0.8", features = ["serde"] }
 hkdf = "0.12"
 sha2 = "0.10"
+openssl = { version = "0.10", features = ["vendored"] }
+
 
 # HTTP / API
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
@@ -122,11 +124,11 @@ tempfile = "3"
 mockall = "0.13"
 
 [features]
-default = ["jemalloc"]
+default = []
 jemalloc = ["dep:jemallocator"]
 mimalloc = ["dep:mimalloc"]
 gui = ["dep:ratatui", "dep:crossterm"]
-full = ["default", "gui"]
+full = ["gui"]
 
 [lib]
 name = "the_quant"

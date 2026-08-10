@@ -44,6 +44,8 @@ pub mod anomaly;
 pub mod changepoint;
 pub mod math;
 pub mod wizard;
+// v3.1 "Hephaestus" modules
+pub mod pipeline;
 
 // Re-export commonly used types at crate level
 pub use config::QuantConfig;

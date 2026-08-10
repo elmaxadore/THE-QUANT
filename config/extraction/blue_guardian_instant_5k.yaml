@@ -1,0 +1,23 @@
+# config/extraction/blue_guardian_instant_5k.yaml
+name: "Blue Guardian Instant 5K — Conservative Extraction"
+target_daily_profit: 25.00
+target_daily_profit_range: [20.00, 30.00]   # acceptable band
+max_daily_profit: 35.00                     # cap to avoid consistency breach
+min_daily_profit: 15.00                     # floor — if below, adjust size
+weekly_target: 125.00
+payout_cap: 250.00
+expected_days_to_payout: 10                 # 250 / 25
+
+risk_adjustments:
+  ahead_of_curve:      # >20% ahead of extraction curve
+    risk_multiplier: 0.6
+    max_daily_profit: 30.00
+  behind_curve:        # >20% behind
+    risk_multiplier: 1.2
+    min_signal_quality: 0.85
+  on_strike:           # 1 shield strike
+    risk_multiplier: 0.5
+    max_loss_per_trade: 35.00               # tighter than firm's 50
+  on_consistency_warning:
+    risk_multiplier: 0.7
+    max_daily_profit: 25.00
