@@ -1,11 +1,11 @@
 [package]
 name = "the-quant"
-version = "3.0.0"
+version = "4.0.0"
 edition = "2021"
-description = "Percentage-Scaled, Zero-Copy Autonomous Quantitative Trading Platform"
+description = "Hercules — Git-Centric, Multi-Account, Self-Updating Autonomous Quantitative Trading Platform"
 authors = ["The Quant Team"]
 license = "MIT"
-repository = "https://github.com/TheQuantCompany/the-quant"
+repository = "https://github.com/elmaxadore/THE-QUANT.git"
 rust-version = "1.78"
 
 [profile.release]
@@ -30,6 +30,7 @@ dashmap = "6"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bincode = "1"
+toml = "0.8"
 
 # Database
 sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "chrono", "uuid", "bigdecimal"] }
@@ -54,7 +55,6 @@ tracing-appender = "0.2"
 
 # Configuration
 config = "0.14"
-toml = "0.8"
 
 # CLI
 clap = { version = "4", features = ["derive", "env"] }
@@ -71,7 +71,6 @@ secrecy = { version = "0.8", features = ["serde"] }
 hkdf = "0.12"
 sha2 = "0.10"
 openssl = { version = "0.10", features = ["vendored"] }
-
 
 # HTTP / API
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
@@ -116,11 +115,16 @@ itertools = "0.13"
 ndarray = "0.16"
 nalgebra = "0.33"
 paste = "1"
+semver = "1"
+flate2 = "1"
+tar = "0.4"
+tempfile = "3"
+walkdir = "2"
+pathdiff = "0.2"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1"
-tempfile = "3"
 mockall = "0.13"
 
 [features]
