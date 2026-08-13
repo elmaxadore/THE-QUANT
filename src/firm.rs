@@ -326,7 +326,7 @@ impl QuantFirm {
         &mut self,
         name: String,
         variant: AccountVariant,
-        account_type: AccountType,
+        _account_type: AccountType,
         stage: AccountStage,
     ) -> QuantResult<Uuid> {
         let profile = AccountTypeProfile::for_variant(variant.clone());
@@ -335,7 +335,7 @@ impl QuantFirm {
         // Ensure state dirs exist
         self.state.ensure_account_dirs(&uuid)?;
 
-        let desk = TradingDesk::new(uuid, name, variant, self.state.state_root());
+        let desk = TradingDesk::new(uuid, name.clone(), variant, self.state.state_root());
         self.desks.insert(uuid, desk);
 
         // Register in the state store manifest

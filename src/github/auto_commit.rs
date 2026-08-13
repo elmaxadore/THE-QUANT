@@ -136,11 +136,22 @@ pub trait CommitHandler: Send + Sync {
 
 /// The AutoCommitEngine queues state-change events and commits them to the
 /// repository. The repository IS the source of truth — no event is ever lost.
-#[derive(Debug, Clone)]
+///
+/// Note: Manual `Debug` implementation because `Arc<dyn CommitHandler>` does
+/// not implement `Debug` (trait objects don't).
 pub struct AutoCommitEngine {
     queue: CommitQueue,
     /// Hook used to perform the actual git commit+push.
     committer: Option<Arc<dyn CommitHandler + Send + Sync>>,
+}
+
+impl std::fmt::Debug for AutoCommitEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AutoCommitEngine")
+            .field("queue", &self.queue)
+            .field("committer", &self.committer.is_some())
+            .finish()
+    }
 }
 
 impl AutoCommitEngine {

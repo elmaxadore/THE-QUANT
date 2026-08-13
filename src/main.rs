@@ -145,7 +145,7 @@ async fn run_daemon() -> QuantResult<()> {
 
 /// Run the bootstrap / first-time setup.
 async fn run_bootstrap() -> QuantResult<()> {
-    println!("=== The v3.0 Bootstrap ===");
+    println!("=== The Quant v4.0 Bootstrap ===");
     the_quant::bootstrap::Bootstrap::run().await
 }
 
@@ -257,7 +257,7 @@ async fn run_restore(args: &[String]) -> QuantResult<()> {
 
     let engine = RestoreEngine::new(repo_root, options);
     println!("=== The v4.0 Restore ===");
-    let report = engine.restore()?;
+    let report = engine.run()?;
     println!("Manifest: v{} (schema {})", report.manifest_version, report.schema_version);
     println!("Accounts restored: {}", report.accounts_restored);
     println!("Status: {:?}", report.status);

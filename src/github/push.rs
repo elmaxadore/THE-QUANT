@@ -5,7 +5,7 @@
 
 use crate::config::QuantConfig;
 use crate::error::{QuantError, QuantResult};
-use git2::{Cred, PushOptions, RemoteCallbacks, Repository};
+use git2::{PushOptions, RemoteCallbacks, Repository};
 use std::path::PathBuf;
 use tracing::info;
 
@@ -23,12 +23,8 @@ impl GitHubPush {
         let home = std::env::var("HOME").unwrap_or_else(|_| "/root".to_string());
         let repo_path = PathBuf::from(&home).join("the-quant");
 
-        // Determine branch from remote or default to main
-        let branch = config
-            .github
-            .branch
-            .clone()
-            .unwrap_or_else(|| "main".to_string());
+        // Determine branch from config (defaults to "main" in GitHubConfig::default)
+        let branch = config.github.branch.clone();
 
         Self {
             repo_path,
