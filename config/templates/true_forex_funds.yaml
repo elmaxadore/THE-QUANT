@@ -1,0 +1,32 @@
+# True Forex Funds — Prop Firm Account Template
+firm: true_forex_funds
+variants:
+  evaluation:
+    profit_target_pct: 10.0
+    time_limit_days: 30
+    max_drawdown_pct: 8.0
+    daily_loss_limit_pct: 5.0
+    consistency_required: false
+    shield_enabled: false
+    scaling_enabled: true
+    min_trading_days: 5
+    leverage: 100
+    strategy_bias: balanced
+    risk_per_trade_pct: 0.5
+    target_monthly_pct: 5.0
+  funded:
+    profit_target_pct: ~
+    time_limit_days: ~
+    max_drawdown_pct: 8.0
+    daily_loss_limit_pct: 5.0
+    consistency_required: false
+    shield_enabled: true
+    shield_amount_usd: 50.0
+    scaling_enabled: true
+    min_trading_days: 0
+    leverage: 100
+    strategy_bias: conservative
+    risk_per_trade_pct: 0.3
+    target_monthly_pct: 3.0
+    extraction_daily_usd: 25.0
+default_variant: evaluation

@@ -17,7 +17,14 @@
 //! - **Layer 8**: Evolution Loop
 //! - **Layer 9**: CLI/TUI Interface
 //! - **Layer 10**: PostgreSQL Schema (TimescaleDB)
-//! - **Layer 11**: GitHub Integration
+//! - **Layer 11**: GitHub Integration (Git = source of truth)
+//!
+//! ## v4.0 "Hercules" — Resilience Through Updatability
+//!
+//! - **`state/`** — Git-centric state architecture (manifest, store, restore)
+//! - **`firm/` — multi-account TradingDesk isolation + QuantFirm orchestrator
+//! - **`update/`** — blue-green self-update engine
+//! - **`github/auto_commit`** — event-driven state commit queueing
 
 pub mod config;
 pub mod error;
@@ -46,6 +53,10 @@ pub mod math;
 pub mod wizard;
 // v3.1 "Hephaestus" modules
 pub mod pipeline;
+// v4.0 "Hercules" modules
+pub mod state;
+pub mod update;
+pub mod firm;
 
 // Re-export commonly used types at crate level
 pub use config::QuantConfig;

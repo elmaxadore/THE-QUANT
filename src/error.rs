@@ -119,6 +119,22 @@ pub enum QuantError {
     #[error("TUI error: {0}")]
     TuiError(String),
 
+    // === State & Update Errors (v4.0 "Hercules") ===
+    #[error("State error: {0}")]
+    StateError(String),
+
+    #[error("State manifest verification failed: {0}")]
+    ManifestError(String),
+
+    #[error("Update error: {0}")]
+    UpdateError(String),
+
+    #[error("Blue-green handoff failed at phase {phase}: {0}")]
+    HandoffError { phase: String, detail: String },
+
+    #[error("Restore failed at step {step}: {0}")]
+    RestoreError { step: String, detail: String },
+
     // === I/O Errors ===
     #[error("I/O error: {0}")]
     IoError(#[from] std::io::Error),

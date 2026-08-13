@@ -1,0 +1,59 @@
+# Blue Guardian — Prop Firm Account Template
+# Used by The Quant v4.0 to create per-account rule profiles
+
+firm: blue_guardian
+variants:
+  instant_5k:
+    profit_target_pct: ~          # None — no profit target
+    time_limit_days: ~            # None — no time limit
+    max_drawdown_pct: 10.0
+    daily_loss_limit_pct: ~       # None
+    consistency_required: true
+    consistency_threshold_pct: 15.0
+    shield_enabled: true
+    shield_amount_usd: 50.0
+    payout_cap_usd: 250.0
+    scaling_enabled: true
+    min_trading_days: 0
+    leverage: 100
+    strategy_bias: conservative
+    risk_per_trade_pct: 0.3
+    target_monthly_pct: 3.0
+    extraction_daily_usd: 25.0
+
+  instant_10k:
+    profit_target_pct: null
+    time_limit_days: ~
+    max_drawdown_pct: 10.0
+    daily_loss_limit_pct: ~
+    consistency_required: true
+    consistency_threshold_pct: 15.0
+    shield_enabled: true
+    shield_amount_usd: 100.0
+    payout_cap_usd: 500.0
+    scaling_enabled: true
+    min_trading_days: 0
+    leverage: 100
+    strategy_bias: conservative
+    risk_per_trade_pct: 0.3
+    target_monthly_pct: 3.0
+    extraction_daily_usd: 50.0
+
+  challenge_5k:
+    name: $5K Challenge
+    profit_target_pct: 8.0
+    time_limit_days: 60
+    max_drawdown_pct: 5.0
+    daily_loss_limit_pct: 5.0
+    consistency_required: true
+    consistency_threshold_pct: 20.0
+    shield_enabled: false
+    payout_cap_usd: ~
+    scaling_enabled: true
+    min_trading_days: 3
+    leverage: 100
+    strategy_bias: balanced
+    risk_per_trade_pct: 0.5
+    target_monthly_pct: 5.0
+
+default_variant: instant_5k
