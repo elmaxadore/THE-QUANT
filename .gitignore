@@ -1,0 +1,28 @@
+# Rust
+/target
+**/*.rs.bk
+
+# State that never goes into git (secrets + bulky raw data)
+state/vault.enc
+state/**/*.enc
+state/trades/*.parquet
+data/raw/
+*.pem
+*.key
+
+# Secrets
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
