@@ -1,0 +1,17 @@
+# The Quant — Python training requirements (HYBRID: offline training only).
+# Rust runs the live hot path; Python trains models here and exports .onnx.
+#
+# Install with:  pip install -r requirements.txt
+#
+# NOTE: These are intentionally the minimum for the trace; the trainer
+# (train_gbdt.py / train_mlp.py) uses torch + sklearn and exports ONNX.
+
+torch>=2.1
+scikit-learn>=1.3
+pandas>=2.0
+numpy>=1.24
+onnx>=1.16
+onnxruntime>=1.18
+xgboost>=2.0
+onnxconverter-common>=1.9
+skl2onnx>=1.17

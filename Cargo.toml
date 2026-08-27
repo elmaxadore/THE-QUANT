@@ -2,147 +2,68 @@
 name = "the-quant"
 version = "4.0.0"
 edition = "2021"
-description = "Hercules — Git-Centric, Multi-Account, Self-Updating Autonomous Quantitative Trading Platform"
-authors = ["The Quant Team"]
-license = "MIT"
-repository = "https://github.com/elmaxadore/THE-QUANT.git"
 rust-version = "1.78"
+description = "The Quant — hybrid, self-scaling, self-updating autonomous quantitative trading system"
+license = "Proprietary"
 
-[profile.release]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-panic = "abort"
-strip = true
-
-[dependencies]
-# Async runtime
-tokio = { version = "1", features = ["full", "parking_lot", "tracing"] }
-rayon = "1"
-
-# Concurrency (lock-free)
-crossbeam = "0.8"
-crossbeam-channel = "0.5"
-parking_lot = "0.12"
-dashmap = "6"
-
-# Serialization
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-bincode = "1"
-toml = "0.8"
-
-# Database
-sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "chrono", "uuid", "bigdecimal"] }
-deadpool-postgres = "0.14"
-
-# ZeroMQ (MQL5 bridge)
-zmq = "0.10"
-
-# Data processing
-polars = { version = "0.41", features = ["performant", "dtype-datetime", "lazy", "streaming"] }
-arrow = "52"
-parquet = "52"
-
-# Numerical / financial
-rust_decimal = { version = "1", features = ["serde-with-float", "maths"] }
-chrono = { version = "=0.4.38", features = ["serde"] }
-
-# Logging / tracing
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-tracing-appender = "0.2"
-
-# Configuration
-config = "0.14"
-
-# CLI
-clap = { version = "4", features = ["derive", "env"] }
-
-# TUI
-ratatui = { version = "0.27", optional = true }
-crossterm = { version = "0.27", optional = true }
-
-# Security / crypto
-argon2 = "0.5"
-aes-gcm = "0.10"
-jsonwebtoken = "9"
-secrecy = { version = "0.8", features = ["serde"] }
-hkdf = "0.12"
-sha2 = "0.10"
-openssl = { version = "0.10", features = ["vendored"] }
-
-# HTTP / API
-reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-axum = { version = "0.7", features = ["ws", "macros"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["cors", "trace"] }
-tokio-tungstenite = "0.24"
-rust-embed = "8"
-
-# GitHub
-octocrab = "0.39"
-git2 = "0.19"
-
-# Error handling
-thiserror = "1"
-anyhow = "1"
-
-# Memory management
-sysinfo = "0.30"
-jemallocator = { version = "0.5", optional = true }
-mimalloc = { version = "0.1", optional = true }
-
-# Metrics
-metrics = "0.23"
-metrics-exporter-prometheus = "0.15"
-
-# Utilities
-uuid = { version = "1", features = ["v4", "serde"] }
-blake3 = "1"
-rand = "0.8"
-smallvec = { version = "1", features = ["serde"] }
-arrayvec = { version = "0.7", features = ["serde"] }
-lru = "0.12"
-weak-table = "0.3"
-typed-builder = "0.18"
-nonempty = "0.10"
-derivative = "2"
-async-trait = "0.1"
-futures = "0.3"
-pin-project = "1"
-itertools = "0.13"
-ndarray = "0.16"
-nalgebra = "0.33"
-paste = "1"
-semver = "1"
-flate2 = "1"
-tar = "0.4"
-tempfile = "3"
-walkdir = "2"
-pathdiff = "0.2"
-
-[dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-proptest = "1"
-mockall = "0.13"
+# ------------------------------------------------------------------
+# The Quant is a HYBRID system:
+#   * Rust  -> production core engine (data, features, risk, execution,
+#              strategy routing, state, auto-update). Memory-safe, zero-cost,
+#              low-latency-variance.
+#   * Python-> OFFLINE model training only (GBDT/MLP/PPO). Trains in the
+#              evolution lab, exports .onnx, never in the live hot path.
+#   * ONNX  -> the bridge. Rust loads .onnx via the `ort` crate (sub-2ms
+#              inference). This crate is behind the `ml` feature so a lean
+#              Tier-1 build can compile and run without it.
+#
+# RESOURCE SCALING ("one binary, many machines"):
+#   The binary detects RAM/CPU at boot and picks a Tier (1..4). Heavy
+#   capabilities (RL, web, DB, TUI) are cargo *features* so that a lean
+#   Tier-1 build does not even link them. Default features = lean.
+# ------------------------------------------------------------------
 
 [features]
-default = []
-jemalloc = ["dep:jemallocator"]
-mimalloc = ["dep:mimalloc"]
-gui = ["dep:ratatui", "dep:crossterm"]
-full = ["gui"]
+default = ["crypto"]
+# Core security (Argon2id vault + AES-256-GCM). Included by default; it is
+# lightweight, pure-Rust, and needed by the state/security layer.
+crypto = ["dep:argon2", "dep:aes-gcm", "dep:rand", "dep:sha2", "dep:subtle"]
+# Hybrid ML bridge: ONNX Runtime via `ort`. Pulls large C++-linked deps.
+ml = ["dep:ort"]
+# ratatui interactive dashboard (default build uses a plain ANSI dashboard).
+tui = ["dep:crossterm", "dep:ratatui"]
+# Local web dashboard (Axum + tokio). Enables HTTP server + SSE.
+web = ["dep:axum", "dep:tokio", "dep:tower", "dep:serde_urlencoded"]
+# PostgreSQL / TimescaleDB persistence. Falls back to in-memory/file store.
+db = ["dep:sqlx"]
 
-[lib]
-name = "the_quant"
-path = "src/lib.rs"
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 
-[[bin]]
-name = "the-quant"
-path = "src/main.rs"
+# --- feature-gated ---
+argon2 = { version = "0.5", optional = true }
+aes-gcm = { version = "0.10", optional = true }
+rand = { version = "0.8", optional = true }
+sha2 = { version = "0.10", optional = true }
+subtle = { version = "2", optional = true }
 
-[workspace]
+ort = { version = "2.0.0-rc.13", optional = true, features = ["load-dynamic"] }
+crossterm = { version = "0.27", optional = true }
+ratatui = { version = "0.26", optional = true }
+axum = { version = "0.7", optional = true }
+tokio = { version = "1", optional = true, features = ["rt-multi-thread", "macros", "time", "net", "sync"] }
+tower = { version = "0.4", optional = true, features = ["util", "timeout"] }
+serde_urlencoded = { version = "0.7", optional = true }
+sqlx = { version = "0.7", optional = true, features = ["runtime-tokio", "postgres", "time"] }
 
-[package.metadata]
-cargo-audit = true
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+panic = "abort"
+
+[profile.dev]
+opt-level = 1

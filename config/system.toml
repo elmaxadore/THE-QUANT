@@ -1,70 +1,52 @@
-# The Quant — System Configuration
-# This file is auto-generated. Edit with care.
+# ================================================================================
+# THE QUANT — system.toml
+# Percentage-scaled autonomous trading configuration.
+# The binary is ONE codebase that scales with the machine. Heavy capabilities
+# are gated by cargo features; runtime budgets are computed from RAM at boot.
+# ================================================================================
 
 [system]
-# Process capacity as percentage of total RAM (default: 85)
-process_cap_pct = 85
+name = "The Quant"
+# auto-update interval in hours. 24 = check the git repo once a day.
+update_interval_hours = 24
+# Where the binary stores version-control-linked state (the source of truth).
+state_dir = "state"
+config_dir = "config"
+model_dir = "models"
+# Path to the local git repo implementing this codebase. Auto-update reads
+# origin from here and does pull --rebase + blue-green swap.
+repo_dir = "."
+# remote git url shown in github.rs when cloning (set "" to use existing repo)
+repo_remote = ""
+# headless: when true, no interactive UI at all (best for systemd/daemon mode)
+headless = false
+# enable quote feed simulation when no live MT5 bridge is reachable
+simulated_feed = true
+symbols = ["EURUSD", "XAUUSD", "GBPUSD"]
 
-# Log level: trace, debug, info, warn, error
-log_level = "info"
+[account]
+type = "PERSONAL"          # PERSONAL | PROP_EVALUATION | PROP_FUNDED
+max_drawdown_pct = 5.0     # 5% hard drawdown cap
+daily_loss_limit_pct = 3.0 # daily loss stop
+risk_per_trade_pct = 1.0   # risk per trade
+max_lot_size = 1.0
+leverage = 30
 
-# Data directory (relative to ~/.thequant or absolute)
-data_dir = "~/.thequant/data"
+[update]
+# path to cargo (auto-detected if empty)
+cargo = ""
+# path to git (auto-detected if empty)
+git = ""
+# require the freshly built binary to pass a --sqlite smoke check before swap
+require_smoke_test = true
+# keep the previous binary for instant rollback
+keep_previous = true
 
-[mt5]
-# ZeroMQ endpoints
-zmq_pub_endpoint = "tcp://127.0.0.1:5555"
-zmq_sub_endpoint = "tcp://127.0.0.1:5556"
+[ml]
+enabled = false            # flips on if a .onnx model is found at startup
+model_path = "models/latest.onnx"
+max_inference_ms = 2.0
 
-# Trading symbols
-symbols = ["EURUSD", "GBPUSD", "XAUUSD", "BTCUSD"]
-
-# Timeframes to track
-timeframes = ["M1", "M5", "M15", "H1", "H4", "D1"]
-
-# MT5 connection: local (Wine) or remote
-mode = "local"  # local | remote
-
-[database]
-host = "127.0.0.1"
-port = 5432
-name = "thequant"
-user = "quant"
-# Password is stored in environment variable QUANT_DB_PASSWORD
-max_connections = 10
-
-[risk]
-# Default risk per trade as percentage of account
-default_risk_per_trade_pct = 0.5
-
-# Maximum drawdown percentage of account
-max_drawdown_pct = 15.0
-
-# Position sizing defaults
-default_slippage_tolerance_atr = 0.5
-
-[model]
-# Base directory for models
-models_dir = "~/.thequant/models"
-
-# Training parameters
-max_trees = 1000
-max_depth = 6
-early_stopping_patience = 20
-
-[evolution]
-# Trigger thresholds
-min_trades_between_cycles = 20
-hours_between_cycles = 168  # 7 days
-performance_ratio_threshold = 0.5
-
-[github]
-enabled = false
-# repo_url = "https://github.com/your-org/the-quant.git"
-# pat stored in environment variable QUANT_GITHUB_PAT
-
-[ui]
-# TUI enabled by default (set false for headless mode)
-tui_enabled = true
-# Auto-lock after N minutes of inactivity
-auto_lock_minutes = 5
+[logging]
+level = "info"            # trace | debug | info | warn | error
+journal_dir = "state/trades"

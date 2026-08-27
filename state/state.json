@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "account": {
+    "account_id": "default",
+    "account_type": "PERSONAL",
+    "balance": -16655350.931090022,
+    "equity": 10000.0,
+    "daily_pnl": -16665350.931090022,
+    "max_drawdown_pct": 0.0,
+    "current_drawdown_pct": 0.0,
+    "status": "Active",
+    "open_positions": {}
+  },
+  "trades": [
+    {
+      "id": "t-59-sl",
+      "account_id": "default",
+      "symbol": "GBPUSD",
+      "direction": "SELL",
+      "volume": 0.7913372358043793,
+      "entry_price": 1.2636837428527157,
+      "exit_price": 1.2649474265955685,
+      "pnl": -100.00000000000627,
+      "open_time": "2026-08-27T08:19:06.810Z",
+      "close_time": "2026-08-27T08:19:06.810Z",
+      "strategy": "stop-mgmt"
+    },
+    {
+      "id": "t-61-sl",
+      "account_id": "default",
+      "symbol": "EURUSD",
+      "direction": "SELL",
+      "volume": 0.9143196360341646,
+      "entry_price": 1.0827723270760063,
+      "exit_price": 1.0838550994030824,
+      "pnl": -99.00000000000833,
+      "open_time": "2026-08-27T08:19:06.810Z",
+      "close_time": "2026-08-27T08:19:06.810Z",
+      "strategy": "stop-mgmt"
+    },
+    {
+      "id": "t-62-sl",
+      "account_id": "default",
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "volume": 0.7747950349232965,
+      "entry_price": 1.2649797118240784,
+      "exit_price": 1.2637147321122544,
+      "pnl": -98.00999999999713,
+      "open_time": "2026-08-27T08:19:06.810Z",
+      "close_time": "2026-08-27T08:19:06.810Z",
+      "strategy": "stop-mgmt"
+    },
+    {
+      "id": "t-64-sl",
+      "account_id": "default",
+      "symbol": "EURUSD",
+      "direction": "SELL",
+      "volume": 0.8954296656050207,
+      "entry_price": 1.0836127473444725,
+      "exit_price": 1.084696360091817,
+      "pnl": -97.02989999999022,
+      "open_time": "2026-08-27T08:19:06.810Z",
+      "close_time": "2026-08-27T08:19:06.810Z",
+      "strategy": "stop-mgmt"
+    },
+    {
+      "id": "t-65-sl",
+      "account_id": "default",
+      "symbol": "GBPUSD",
+      "direction": "BUY",
+      "volume": 0.7588094634788564,
+      "entry_price": 1.2659251844277586,
+      "exit_price": 1.2646592592433308,
+      "pnl": -96.05960100000368,
+      "open_time": "2026-08-27T08:19:06.810Z",
+      "close_time": "2026-08-27T08:19:06.810Z",
+      "strategy": "stop-mgmt"
+    },
+    {
+      "id": "t-67",
+      "account_id": "default",
+      "symbol": "EURUSD",
+      "direction": "BUY",
+      "volume": 0.8770237874055596,
+      "entry_price": 1.0843378065186227,
+      "exit_price": -188.9317264200579,
+      "pnl": -16664860.83158902,
+      "open_time": "2026-08-27T08:19:06.810Z",
+      "close_time": "2026-08-27T08:19:06.810Z",
+      "strategy": "rule-model"
+    }
+  ],
+  "last_update_check": null,
+  "last_update_applied": null,
+  "extra": {}
+}
