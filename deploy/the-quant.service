@@ -1,0 +1,24 @@
+[Unit]
+Description=The Quant — autonomous quantitative trading system
+After=network.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Non-root dedicated user created by deploy_vps.sh
+User=quant
+Group=quant
+WorkingDirectory=/opt/the-quant
+ExecStart=/usr/local/bin/the-quant daemon_run
+Restart=on-failure
+RestartSec=5
+# Percentage-scaled resources: the binary decides its own limits, but we still
+# give systemd a ceiling so one runaway run cannot starve the machine.
+MemoryMax=4G
+CPUQuota=75%
+
+# Environment for git auth (PAT is read from the vault, not here).
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=multi-user.target
