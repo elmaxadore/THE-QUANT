@@ -161,4 +161,4 @@ fn daemon(cfg: &Config, _profile: &resource::ResourceProfile) {
     let stop = Arc::new(AtomicBool::new(false));
     eprintln!("[the-quant] daemon: update scheduler every {}h", upd.interval_hours);
     upd.scheduler_loop(&mut store, stop);
-}
+}// v4.1 marker
