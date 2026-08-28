@@ -17,7 +17,7 @@ model_dir = "models"
 # origin from here and does pull --rebase + blue-green swap.
 repo_dir = "."
 # remote git url shown in github.rs when cloning (set "" to use existing repo)
-repo_remote = ""
+repo_remote = "https://github.com/elmaxadore/THE-QUANT"
 # headless: when true, no interactive UI at all (best for systemd/daemon mode)
 headless = false
 # enable quote feed simulation when no live MT5 bridge is reachable
