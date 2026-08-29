@@ -1,0 +1,41 @@
+# The5ers Prop Firm Account Template
+# =============================================================================
+# One-phase evaluation with high-profit-split model and weekly payout option.
+
+[meta]
+template_id = "the5ers_boost"
+provider = "The5ers"
+version = "1.0"
+description = "The5ers Boost 100k (one-phase)"
+
+[account]
+account_type = "PropFirm"
+stage = "Evaluation"
+leverage = 100
+default_currency = "USD"
+
+[account.default_rules]
+max_drawdown_pct = 8.0             # 8% trailing drawdown
+profit_target_pct = 10.0
+time_limit_days = 60
+min_trading_days = 6
+daily_loss_limit_pct = 4.0
+max_lot_size = 25.0
+news_trading = "Allowed"           # The5ers allows news trading with plan compliance
+weekend_hold = true
+hedging_allowed = true
+
+[risk]
+risk_per_trade_pct = 0.5
+max_correlated_group_exposure_pct = 2.0
+default_slippage_tolerance_atr = 0.5
+
+[targets]
+monthly_return_pct = 6.0
+max_drawdown_pct = 4.0
+profit_split_pct = 95.0
+
+[special]
+payout_frequency = "weekly"
+consistency_rule_pct = 30.0        # No single day may exceed 30% of profit goal
+

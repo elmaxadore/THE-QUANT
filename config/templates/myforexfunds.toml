@@ -1,0 +1,42 @@
+# MyForexFunds Prop Firm Account Template
+# =============================================================================
+# Two-phase evaluation with generous drawdown allowances and scaling plan.
+
+[meta]
+template_id = "mff_challenge"
+provider = "MyForexFunds"
+version = "1.0"
+description = "MFF 100k Evaluation (standard)"
+
+[account]
+account_type = "PropFirm"
+stage = "Evaluation"
+leverage = 100
+default_currency = "USD"
+
+[account.default_rules]
+max_drawdown_pct = 10.0            # 10% max overall drawdown (relative to start)
+profit_target_pct = 10.0           # 10% profit target
+time_limit_days = 30
+min_trading_days = 8
+daily_loss_limit_pct = 5.0
+max_lot_size = 20.0
+news_trading = "Restricted"
+weekend_hold = true
+hedging_allowed = true
+
+[risk]
+risk_per_trade_pct = 0.5
+max_correlated_group_exposure_pct = 2.0
+default_slippage_tolerance_atr = 0.5
+
+[targets]
+monthly_return_pct = 8.0
+max_drawdown_pct = 5.0
+profit_split_pct = 75.0
+
+[scaling]
+scale_after_months = 3
+scale_increment_pct = 10.0
+scale_cap_pct = 400.0
+

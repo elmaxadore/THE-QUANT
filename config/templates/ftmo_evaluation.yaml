@@ -1,0 +1,19 @@
+# config/templates/ftmo_evaluation.yaml
+firm_name: "FTMO"
+variant: "Normal 10K Evaluation"
+account_type: PropFirm
+stage: Evaluation
+
+initial_balance: 10000.00
+
+rules:
+  max_drawdown_pct: 10.0
+  daily_loss_limit_pct: 5.0
+  profit_target_pct: 10.0
+  time_limit_days: 30
+  min_trading_days: 4
+  leverage: 100
+  allowed_instruments: [FOREX, METALS, INDICES, CRYPTO]
+  news_trading: restricted
+  weekend_hold: false
+  consistency_rule: true

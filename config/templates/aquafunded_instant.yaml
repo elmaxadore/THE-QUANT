@@ -1,0 +1,47 @@
+# config/templates/aquafunded_instant.yaml
+firm_name: "AquaFunded"
+variant: "Instant 5K"
+account_type: PropFirm
+stage: Funded
+
+initial_balance: 5000.00
+
+rules:
+  max_drawdown_pct: 8.0
+  daily_loss_limit_pct: 3.0
+  profit_target_pct: 0.0
+  time_limit_days: 0
+  min_trading_days: 0
+  leverage: 100
+  allowed_instruments: [FOREX, METALS, INDICES]
+  news_trading: allowed
+  weekend_hold: true
+  consistency_rule: true
+  anti_scalping: true
+
+consistency_profile:
+  profit_concentration:
+    enabled: true
+    threshold_pct: 20.0
+    lookback_days: 30
+    enforcement_mode: Hard
+    auto_adjust_sizing: true
+  lot_size_consistency:
+    enabled: true
+    max_cv: 0.50
+    enforcement_mode: Soft
+
+guardian_shield:
+  enabled: true
+  max_loss_per_trade: 60.00
+  strike_limit: 2
+  cooldown_bars: 0
+  auto_reduce_size_after_strike: true
+  reduction_factor: 0.5
+
+payout_cap:
+  enabled: true
+  total_cap: 300.00
+  min_days_before_first_payout: 0
+  payout_schedule: OnDemand
+  payout_fee_pct: 0.0
