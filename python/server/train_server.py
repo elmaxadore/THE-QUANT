@@ -20,7 +20,8 @@ import sys
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Repo root: this file lives at <repo>/python/server/train_server.py
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODELS = os.path.join(ROOT, "models")
 
 last_train = None

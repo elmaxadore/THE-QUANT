@@ -2,15 +2,14 @@
 /target
 **/*.rs.bk
 
-# State that never goes into git (secrets + bulky raw data)
-state/vault.enc
-state/**/*.enc
-state/trades/*.parquet
-data/raw/
-*.pem
-*.key
+# Runtime state — never committed. The repo holds the codebase, config and
+# models; live account state is generated at runtime (see `the-quant restore`).
+state/**
+!state/.gitkeep
 
 # Secrets
+*.pem
+*.key
 .env
 .env.*
 
@@ -19,6 +18,10 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Model artifacts are produced by the offline trainer (python/train)
+models/*
+!models/.gitkeep
 
 # OS / editor
 .DS_Store

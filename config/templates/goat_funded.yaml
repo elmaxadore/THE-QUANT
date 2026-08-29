@@ -30,4 +30,21 @@ variants:
     risk_per_trade_pct: 0.3
     target_monthly_pct: 3.0
     extraction_daily_usd: 25.0
+  classic_5k:
+    # "Classic Evaluation" — no daily loss cap, no consistency rule,
+    # anti-scalping enforced. For high-conviction swing styles.
+    stage: evaluation
+    initial_balance: 5000.00
+    profit_target_pct: 8.0
+    time_limit_days: 0
+    max_drawdown_pct: 10.0
+    daily_loss_limit_pct: 0.0
+    consistency_required: false
+    shield_enabled: false
+    scaling_enabled: true
+    min_trading_days: 0
+    leverage: 100
+    strategy_bias: balanced
+    risk_per_trade_pct: 0.5
+    target_monthly_pct: 5.0
 default_variant: evaluation

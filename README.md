@@ -44,7 +44,7 @@ Enable with: `cargo build --release --features ml,web,tui,db`
 ## Hybrid ML
 
 ```bash
-pip install -r python/server/requirements.txt
+pip install -r python/requirements.txt
 python3 python/train/train_gbdt.py   # trains -> models/latest.onnx
 cargo build --release --features ml
 ./target/release/the-quant paper     # uses ONNX model if present
@@ -55,13 +55,15 @@ cargo build --release --features ml
 `AutoUpdater` (src/update.rs) runs a scheduler loop (default: every 24h):
 
 ```
-fetch origin → compare HEAD → snapshot state (git commit)
-→ pull --rebase → cargo build --release (staged)
-→ smoke-test new binary → blue-green swap → record in state.json
+fetch origin (read-only) → compare HEAD
+→ build remote code in an isolated staging worktree
+→ smoke-test the new binary → blue-green swap → ff-only merge
 ```
 
-On any failure the previous binary is preserved, state remains intact, and the
-next check retries. `deploy/update.sh` is the manual equivalent.
+The live working tree and running binary are only touched after the new
+binary has been built and smoke-tested. On any failure the running binary and
+state are untouched, and the next check retries. `deploy/update.sh` is the
+manual equivalent.
 
 ## Layout
 
@@ -69,12 +71,16 @@ next check retries. `deploy/update.sh` is the manual equivalent.
 src/          Rust core (resource, config, security, state, github, update,
               simfeed, features, regime, onnx, strategy, risk, execution,
               engine, tui, web)
-python/       offline training + research server (hybrid ML)
+python/       train/        offline GBDT trainer -> models/*.onnx
+              server/       offline research server
+              requirements.txt
+config/       system.toml + per-firm rule templates (FTMO, The5ers, ...)
 deploy/       systemd unit, install.sh, update.sh
 migrations/   PostgreSQL / TimescaleDB schema
-state/        git-synced source-of-truth state
-config/       system.toml
-models/       .onnx model artifacts
+state/        runtime state (git-ignored; recreated by `the-quant restore`)
+models/       .onnx model artifacts (git-ignored; produced by python/train)
+```
+models/       .onnx model artifacts (git-ignored; produced by python/train)
 ```
 
 ## Risks & disclaimer

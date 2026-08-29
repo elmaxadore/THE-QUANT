@@ -11,7 +11,8 @@ import os
 import numpy as np
 
 N_FEATURES = 12
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Repo root: this file lives at <repo>/python/train/train_gbdt.py
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def make_data(n=20_000, seed=7):
