@@ -54,9 +54,31 @@ impl GitSync {
         run_git(&self.repo_dir, &self.git_bin, &["rev-parse", "HEAD"])
     }
 
+    /// Current branch name, e.g. "main". Falls back to "main" when detached.
+    pub fn current_branch(&self) -> String {
+        run_git(&self.repo_dir, &self.git_bin, &["rev-parse", "--abbrev-ref", "HEAD"])
+            .map(|s| s.trim().to_string())
+            .ok()
+            .filter(|s| !s.is_empty() && s != "HEAD")
+            .unwrap_or_else(|| "main".to_string())
+    }
+
+    /// The commit the remote's tracking branch points at.
+    ///
+    /// NOTE: `ls-remote origin HEAD` is NOT reliable — some transports (notably
+    /// local file remotes) do not advertise a HEAD symref, which would make the
+    /// updater silently think there is nothing to update. We therefore ask for
+    /// the current branch's ref explicitly.
     pub fn remote_head(&self) -> Result<String, String> {
-        run_git(&self.repo_dir, &self.git_bin, &["ls-remote", "origin", "HEAD"])
-            .map(|s| s.split_whitespace().next().unwrap_or("").to_string())
+        let branch = self.current_branch();
+        let spec = format!("refs/heads/{branch}");
+        let out = run_git(&self.repo_dir, &self.git_bin, &["ls-remote", "origin", &spec])?;
+        // Fall back to any advertised head if the branch is missing upstream.
+        if out.is_empty() {
+            let all = run_git(&self.repo_dir, &self.git_bin, &["ls-remote", "origin", "refs/heads/*"])?;
+            return Ok(all.lines().next().unwrap_or("").split_whitespace().next().unwrap_or("").to_string());
+        }
+        Ok(out.split_whitespace().next().unwrap_or("").to_string())
     }
 
     /// Fetch origin without touching working tree.

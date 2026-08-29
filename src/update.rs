@@ -74,15 +74,17 @@ impl AutoUpdater {
         // 2. Snapshot state (a git commit touching only state/ + config is safe).
         let _ = self.snapshot_state(store, &git);
 
-        // 3. Build from a staging worktree pinned to origin/main's HEAD —
+        // 3. Build from a staging worktree pinned to the remote tracking branch —
         //    the live tree is never modified.
+        let branch = git.current_branch();
+        let tracking = format!("origin/{branch}");
         let stage_root = std::env::temp_dir().join("the_quant_stage");
         let _ = std::fs::remove_dir_all(&stage_root);
         std::fs::create_dir_all(&stage_root).unwrap_or_default();
         if let Err(e) = run_git(
             Path::new(&self.cfg.system.repo_dir),
             &self.git_bin(),
-            &["worktree", "add", "--detach", stage_root.to_str().unwrap_or(""), "origin/HEAD"],
+            &["worktree", "add", "--detach", stage_root.to_str().unwrap_or(""), &tracking],
         ) {
             return UpdateResult::Failed { reason: format!("staging worktree: {e}") };
         }
@@ -116,7 +118,11 @@ impl AutoUpdater {
         }
 
         // 6. Fast-forward the live branch to the remote (source refresh only).
-        let _ = run_git(Path::new(&self.cfg.system.repo_dir), &self.git_bin(), &["merge", "--ff-only", "origin/HEAD"]);
+        let _ = run_git(
+            Path::new(&self.cfg.system.repo_dir),
+            &self.git_bin(),
+            &["merge", "--ff-only", &tracking],
+        );
 
         // 7. Clean up the staging worktree.
         let _ = self.cleanup_stage(&stage_root);
