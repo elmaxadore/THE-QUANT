@@ -173,9 +173,23 @@ impl AutoUpdater {
         } else {
             "cargo".to_string()
         };
+        // Preserve the feature profile chosen at install time (written by
+        // deploy/install.sh to <repo>/.build-features) so an auto-updated
+        // binary keeps the same capabilities (web/tui/...) as the one it
+        // replaces. The file lives in the LIVE repo; the build happens in the
+        // staging worktree.
+        let mut args: Vec<String> = vec!["build".into(), "--release".into()];
+        let feat_file = PathBuf::from(&self.cfg.system.repo_dir).join(".build-features");
+        if let Ok(s) = std::fs::read_to_string(&feat_file) {
+            let feats = s.trim().to_string();
+            if !feats.is_empty() {
+                args.push("--features".into());
+                args.push(feats);
+            }
+        }
         let out = Command::new(&cargo)
             .current_dir(worktree)
-            .args(["build", "--release"])
+            .args(&args)
             .output()
             .map_err(|e| format!("cargo build: {e}"))?;
         if !out.status.success() {

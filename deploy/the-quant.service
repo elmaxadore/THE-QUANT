@@ -1,24 +1,29 @@
 [Unit]
 Description=The Quant — autonomous quantitative trading system
-After=network.target postgresql.service
+After=network.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-# Non-root dedicated user created by deploy_vps.sh
+# Non-root dedicated user created by deploy/install.sh
 User=quant
 Group=quant
 WorkingDirectory=/opt/the-quant
 ExecStart=/usr/local/bin/the-quant daemon_run
 Restart=on-failure
 RestartSec=5
-# Percentage-scaled resources: the binary decides its own limits, but we still
-# give systemd a ceiling so one runaway run cannot starve the machine.
-MemoryMax=4G
+
+# TIER-AWARE RESOURCE CEILINGS (percentages of physical RAM, so the same unit
+# file self-scales from a 4 GB VPS to a 64 GB workstation — no edits needed).
+# The binary additionally budgets each module as a % of what is left over.
+MemoryMax=80%
+MemoryHigh=70%
 CPUQuota=75%
 
-# Environment for git auth (PAT is read from the vault, not here).
+# PATH must include the quant user's cargo so the 24 h auto-updater can
+# rebuild from the staging worktree when a new commit lands upstream.
 Environment=RUST_LOG=info
+Environment=PATH=/home/quant/.cargo/bin:/usr/local/bin:/usr/bin:/bin
 
 [Install]
 WantedBy=multi-user.target

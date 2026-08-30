@@ -90,6 +90,8 @@ pub mod crypto {
         rand::rngs::OsRng.fill_bytes(&mut b);
         b
     }
+} // pub mod crypto
+
 /// Master vault bound to the configured state directory.
 pub struct Vault {
     pub path: PathBuf,
@@ -216,5 +218,4 @@ mod tests {
         assert!(v.open("not-the-password").is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }
-}
 }

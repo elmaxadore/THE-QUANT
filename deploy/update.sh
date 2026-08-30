@@ -17,8 +17,14 @@ git push origin HEAD || true
 # Pull latest code (rebase).
 git pull --rebase origin HEAD
 
-# Build new binary to a staging path.
-cargo build --release
+# Rebuild with the SAME feature profile chosen at install time
+# (saved by deploy/install.sh to .build-features).
+FEATURE_ARGS=()
+if [ -f .build-features ] && [ -s .build-features ]; then
+  FEATS=$(tr -d '[:space:]' < .build-features)
+  [ -n "$FEATS" ] && FEATURE_ARGS=(--features "$FEATS")
+fi
+cargo build --release "${FEATURE_ARGS[@]}"
 BUILT=target/release/the-quant
 STAGE=/tmp/the-quant-new
 cp "$BUILT" "$STAGE"

@@ -88,6 +88,9 @@ fn main() {
             let p2 = profile.clone();
             daemon(&cfg, &p2);
         }
+        "vault" => {
+            vault_cmd(&cfg, &args);
+        }
         other => {
             eprintln!("unknown command: {other}");
             print_help();
@@ -105,6 +108,9 @@ fn print_help() {
          \x20 the-quant backup           commit+push state to git\n\
          \x20 the-quant update --now     check git and apply update now\n\
          \x20 the-quant restore          recreate state dirs on a fresh machine\n\
+         \x20 the-quant vault init       create the encrypted master vault\n\
+         \x20 the-quant vault check      verify the master password\n\
+         \x20 the-quant vault status     show vault state\n\
          \x20 the-quant daemon           run scheduler (systemd)\n\
          \x20 the-quant --smoke          self-check used by auto-update"
     );
@@ -138,15 +144,72 @@ fn run_paper(cfg: &Config, profile: &resource::ResourceProfile, model: &dyn Mode
 
 fn backup(cfg: &Config) {
     match github::GitSync::discover(cfg) {
-        Ok(g) => {
-            match g.commit_state("state backup") {
-                Ok(true) => { println!("committed state"); let _ = g.push(); }
-                Ok(false) => println!("nothing to commit"),
-                Err(e) => eprintln!("commit failed: {e}"),
+        Ok(g) => match g.commit_state("state backup") {
+            Ok(true) => {
+                println!("committed state");
+                let _ = g.push();
             }
-        }
+            Ok(false) => println!("nothing to commit"),
+            Err(e) => eprintln!("commit failed: {e}"),
+        },
         Err(e) => eprintln!("no git repo: {e}"),
     }
+}
+
+fn vault_cmd(cfg: &Config, args: &[String]) {
+    let sub = args.get(1).map(|s| s.as_str()).unwrap_or("help");
+    let vault = security::Vault::new(cfg);
+    match sub {
+        "init" => {
+            // `the-quant vault init` — prompt for a master password and create
+            // the encrypted vault. Reads from TTY to avoid echo of the password.
+            eprint!("New master password: ");
+            let pw = rpassword_prompt();
+            if pw.len() < 8 {
+                eprintln!("error: master password must be at least 8 characters");
+                std::process::exit(1);
+            }
+            match vault.init(&pw) {
+                Ok(_) => println!("vault created at {}", vault.path.display()),
+                Err(e) => eprintln!("vault init failed: {e}"),
+            }
+        }
+        "check" => {
+            eprint!("Master password: ");
+            let pw = rpassword_prompt();
+            match vault.open(&pw) {
+                Ok(_) => println!("vault unlocked ok"),
+                Err(e) => eprintln!("vault check failed: {e}"),
+            }
+        }
+        "status" => {
+            if vault.path.exists() {
+                println!("vault: present ({})", vault.path.display());
+            } else {
+                println!("vault: not initialised — run `the-quant vault init`");
+            }
+        }
+        _ => {
+            println!("vault commands:\n  the-quant vault init     create the encrypted vault\n  the-quant vault check    verify the master password\n  the-quant vault status   show vault state");
+        }
+    }
+}
+
+/// Read the master password. Hidden input when attached to a TTY; a plain
+/// stdin read otherwise (so scripted/piped use never blocks on a terminal).
+fn rpassword_prompt() -> String {
+    #[cfg(feature = "crypto")]
+    {
+        use std::io::IsTerminal;
+        if std::io::stdin().is_terminal() {
+            if let Ok(pw) = rpassword::read_password() {
+                return pw.trim_end().to_string();
+            }
+        }
+    }
+    let mut pw = String::new();
+    let _ = std::io::stdin().read_line(&mut pw);
+    pw.trim_end().to_string()
 }
 
 fn update_now(cfg: &Config) {
@@ -161,4 +224,4 @@ fn daemon(cfg: &Config, _profile: &resource::ResourceProfile) {
     let stop = Arc::new(AtomicBool::new(false));
     eprintln!("[the-quant] daemon: update scheduler every {}h", upd.interval_hours);
     upd.scheduler_loop(&mut store, stop);
-}// v4.1 marker
+}

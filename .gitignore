@@ -2,6 +2,9 @@
 /target
 **/*.rs.bk
 
+# Build profile chosen by deploy/install.sh (machine-local)
+.build-features
+
 # Runtime state — never committed. The repo holds the codebase, config and
 # models; live account state is generated at runtime (see `the-quant restore`).
 state/**

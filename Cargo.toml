@@ -27,7 +27,7 @@ license = "Proprietary"
 default = ["crypto"]
 # Core security (Argon2id vault + AES-256-GCM). Included by default; it is
 # lightweight, pure-Rust, and needed by the state/security layer.
-crypto = ["dep:argon2", "dep:aes-gcm", "dep:rand", "dep:sha2", "dep:subtle"]
+crypto = ["dep:argon2", "dep:aes-gcm", "dep:rand", "dep:sha2", "dep:subtle", "dep:rpassword"]
 # Hybrid ML bridge: ONNX Runtime via `ort`. Pulls large C++-linked deps.
 ml = ["dep:ort"]
 # ratatui interactive dashboard (default build uses a plain ANSI dashboard).
@@ -49,6 +49,7 @@ aes-gcm = { version = "0.10", optional = true }
 rand = { version = "0.8", optional = true }
 sha2 = { version = "0.10", optional = true }
 subtle = { version = "2", optional = true }
+rpassword = { version = "7", optional = true }
 
 ort = { version = "2.0.0-rc.13", optional = true, features = ["load-dynamic"] }
 crossterm = { version = "0.27", optional = true }
