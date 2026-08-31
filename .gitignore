@@ -22,6 +22,10 @@ __pycache__/
 .venv/
 venv/
 
+# Historical market data is GENERATED locally (python/data/generate_test_data.py)
+# or downloaded (python/data/download_histdata.py) — never committed.
+python/data/histdata/*.csv
+
 # Model artifacts are produced by the offline trainer (python/train)
 models/*
 !models/.gitkeep

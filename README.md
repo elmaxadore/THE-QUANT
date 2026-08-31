@@ -63,11 +63,31 @@ That single command **auto-detects your machine tier** and does everything:
 2. Installs prerequisites and the Rust toolchain if missing
 3. Clones the repo to `/opt/the-quant` (or fast-forwards an existing install)
 4. Builds the release binary **with the feature set your tier deserves**
-5. Creates a non-root `quant` service user + tier-aware systemd unit
-6. Runs `the-quant restore`, starts the daemon, configures the firewall
-7. Prints next steps
+5. Creates a **Python venv** with the training/data stack, generates starter
+   market data and **trains the default rule model** (`models/latest.onnx`)
+6. Installs the **MetaTrader 5 terminal** under Wine (headless) plus the
+   **bar-export connector EA** (`deploy/mt5_ea.mq5`), and bridges the MT5
+   shared-files directory to the config's `mt5_dir` (`/home/quant/mt5/files`)
+7. Creates a non-root `quant` service user + tier-aware systemd unit
+8. Runs `the-quant restore`, starts the daemon, configures the firewall
+9. Prints next steps
 
-The script is **idempotent** — run it again any time to update + rebuild in place.
+After it finishes, all that is left is: **add accounts → collect data →
+train → start trading** (the exact commands are printed at the end).
+
+```text
+  1) the-quant vault init          # master password for the secrets vault
+  2) edit config/system.toml       # add [[accounts]] entries (README §5)
+  3) collect data                  # MT5 EA streams live bars, or download history
+  4) .venv/bin/python python/train/train_gbdt.py   # (re)train the model
+  5) the-quant paper 20000         # paper trade first
+  6) data_source = "mt5"           # flip to live when ready
+```
+
+The script is **idempotent** — run it again any time to update + rebuild in
+place. Optional opt-outs: `INSTALL_PYTHON=0` (skip the Python env / model
+training) and `INSTALL_MT5=0` (skip Wine + MetaTrader 5 — e.g. on Windows or
+when you only want paper mode).
 
 **Overrides** (optional):
 
@@ -366,8 +386,20 @@ mt5_dir = "/home/quant/mt5/files"
 * `primary_timeframe` (global or per account, e.g. `M5`, `M15`) drives the
   day-key bucketing for daily resets and the default bar-window horizon.
 * `time_stop_bars` is in bars of that timeframe (96 × M5 ≈ one trading day).
+* `csv` files in `python/data/histdata/` are **generated locally** by the
+  installer (or `python/data/generate_test_data.py`) — they are not in git.
 * Point `data_source` at `mt5` to run the identical stack live; paper and live
-  share every risk gate.
+  share every risk gate. The one-line installer sets this up end-to-end:
+  1. MT5 terminal installed under Wine (headless, `/auto`)
+  2. the **connector EA** `deploy/mt5_ea.mq5` copied into `MQL5/Experts/` —
+     attach it to any chart, set `InpSymbols = "EURUSD, XAUUSD, …"` to match
+     `[system].symbols`; it appends every completed bar to
+     `<SYMBOL>.csv` in the terminal's `MQL5/Files`
+  3. `/home/quant/mt5/files` (config `mt5_dir`) symlinked to that `Files`
+     directory, so `Mt5Feed` tails the same files the EA writes
+
+  On Windows you can skip the Wine step (`INSTALL_MT5=0`) and point `mt5_dir`
+  at the terminal's `MQL5\Files` folder directly; attach the same EA.
 
 ### 5.7 What you *cannot* break
 
@@ -532,9 +564,10 @@ THE-QUANT/
 │   ├── execution.rs            # order execution scaffolding (MT5 bridge)
 │   ├── features.rs, regime.rs, strategy.rs, security.rs, util.rs, web.rs
 ├── deploy/
-│   ├── install.sh              # one-line installer (tier-aware, idempotent)
-│   ├── the-quant.service       # systemd unit
-│   └── update.sh               # manual blue-green update
+│   ├── install.sh              # one-line installer (Rust + Python + MT5 + EA)
+│   ├── mt5_ea.mq5              # MT5 bar-export connector (EA → shared CSV files)
+│   ├── the-quant.service       # tier-aware systemd unit
+│   └── update.sh               # 24 h auto-update (git pull + rebuild)
 ├── python/                     # offline training (torch/sklearn → ONNX)
 └── state/                      # git-backed trading state
 ```
