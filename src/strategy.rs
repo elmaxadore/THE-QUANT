@@ -45,7 +45,10 @@ pub struct StrategyParams {
 
 impl Default for StrategyParams {
     fn default() -> Self {
-        StrategyParams { entry_confidence: 0.10, exit_confidence: 0.05 }
+        StrategyParams {
+            entry_confidence: 0.10,
+            exit_confidence: 0.05,
+        }
     }
 }
 
@@ -58,7 +61,11 @@ pub struct StrategyEngine<'a> {
 
 impl<'a> StrategyEngine<'a> {
     pub fn new(model: &'a dyn ModelBackend) -> Self {
-        StrategyEngine { model, params: StrategyParams::default(), last_dir: Direction::Hold }
+        StrategyEngine {
+            model,
+            params: StrategyParams::default(),
+            last_dir: Direction::Hold,
+        }
     }
 
     /// Produce a signal for the latest bar window + regime.
@@ -96,7 +103,12 @@ impl<'a> StrategyEngine<'a> {
             Direction::Hold
         };
 
-        let sig = Signal { direction, confidence, regime, model: model_name };
+        let sig = Signal {
+            direction,
+            confidence,
+            regime,
+            model: model_name,
+        };
         self.last_dir = sig.direction;
         sig
     }
@@ -111,7 +123,9 @@ mod tests {
     fn strong_buy_signal_emits_buy() {
         let m = RuleModel::new();
         let mut eng = StrategyEngine::new(&m);
-        let f = [0.3, 0.2, 0.001, 50.0, 0.0005, 0.02, 0.01, 0.5, 0.01, 0.6, 0.6, 0.1];
+        let f = [
+            0.3, 0.2, 0.001, 50.0, 0.0005, 0.02, 0.01, 0.5, 0.01, 0.6, 0.6, 0.1,
+        ];
         let s = eng.evaluate(&f, Regime::TrendingUp);
         assert_eq!(s.direction, Direction::Buy);
     }

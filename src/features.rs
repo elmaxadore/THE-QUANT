@@ -91,7 +91,11 @@ pub fn compute_features(bars: &[Bar]) -> [f64; N_FEATURES] {
     f[8] = (lastbar.high - lastbar.low) / lastbar.close.max(1e-12);
     // 9: close position in range
     let rng = lastbar.high - lastbar.low;
-    f[9] = if rng > 1e-12 { (lastbar.close - lastbar.low) / rng } else { 0.5 };
+    f[9] = if rng > 1e-12 {
+        (lastbar.close - lastbar.low) / rng
+    } else {
+        0.5
+    };
     // 10: crude Hurst-like persistence (sign-correlation of consecutive returns)
     if n >= 20 {
         let mut agrees = 0;
@@ -104,7 +108,11 @@ pub fn compute_features(bars: &[Bar]) -> [f64; N_FEATURES] {
             }
             total += 1;
         }
-        f[10] = if total > 0 { agrees as f64 / total as f64 } else { 0.5 };
+        f[10] = if total > 0 {
+            agrees as f64 / total as f64
+        } else {
+            0.5
+        };
     }
     // 11: momentum ROC-10
     if n >= 11 {

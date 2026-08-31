@@ -31,7 +31,13 @@ pub struct OrderRequest {
 
 impl OrderRequest {
     pub fn new(symbol: &str, direction: Direction, volume: f64, sl: f64, tp: f64) -> Self {
-        OrderRequest { symbol: symbol.into(), direction, volume, stop_loss: sl, take_profit: tp }
+        OrderRequest {
+            symbol: symbol.into(),
+            direction,
+            volume,
+            stop_loss: sl,
+            take_profit: tp,
+        }
     }
 }
 
@@ -45,7 +51,10 @@ pub struct ExecutionEngine {
 
 impl ExecutionEngine {
     pub fn new() -> Self {
-        ExecutionEngine { open: None, net_pnl: 0.0 }
+        ExecutionEngine {
+            open: None,
+            net_pnl: 0.0,
+        }
     }
 
     pub fn has_position(&self) -> bool {
@@ -80,9 +89,15 @@ impl ExecutionEngine {
                 if let Some(p) = self.open.take() {
                     let pnl = pnl_for(&p, price);
                     self.net_pnl += pnl;
-                    OpenOrClose { opened: None, closed: Some(p.to_trade(pnl, price)) }
+                    OpenOrClose {
+                        opened: None,
+                        closed: Some(p.to_trade(pnl, price)),
+                    }
                 } else {
-                    OpenOrClose { opened: None, closed: None }
+                    OpenOrClose {
+                        opened: None,
+                        closed: None,
+                    }
                 }
             }
         }

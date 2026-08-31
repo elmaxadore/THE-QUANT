@@ -128,7 +128,8 @@ impl Store {
 
     pub fn load(&self) -> Result<StateRoot, String> {
         if self.state_path.exists() {
-            let s = std::fs::read_to_string(&self.state_path).map_err(|e| format!("read state: {e}"))?;
+            let s = std::fs::read_to_string(&self.state_path)
+                .map_err(|e| format!("read state: {e}"))?;
             let mut root: StateRoot =
                 serde_json::from_str(&s).map_err(|e| format!("parse state: {e}"))?;
             // forward-migrate: bump revision bookkeeping is harmless on load
@@ -137,7 +138,9 @@ impl Store {
             }
             Ok(root)
         } else {
-            Ok(StateRoot::initial(AccountState::new("default", "PERSONAL", 10_000.0)))
+            Ok(StateRoot::initial(AccountState::new(
+                "default", "PERSONAL", 10_000.0,
+            )))
         }
     }
 
@@ -176,7 +179,9 @@ pub struct Restorer {
 
 impl Restorer {
     pub fn new(cfg: &Config) -> Self {
-        Restorer { root: cfg.state_root() }
+        Restorer {
+            root: cfg.state_root(),
+        }
     }
 
     pub fn restore(&self) -> Result<(), String> {

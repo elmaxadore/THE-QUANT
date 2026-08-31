@@ -37,7 +37,11 @@ pub struct AutoUpdater {
 impl AutoUpdater {
     pub fn new(cfg: Config) -> Self {
         let git = GitSync::discover(&cfg).ok();
-        AutoUpdater { interval_hours: cfg.system.update_interval_hours, cfg, git }
+        AutoUpdater {
+            interval_hours: cfg.system.update_interval_hours,
+            cfg,
+            git,
+        }
     }
 
     /// Perform a single update check now. Called from the scheduler loop and
@@ -56,7 +60,9 @@ impl AutoUpdater {
         // 1. Fetch (read-only: updates remote-tracking refs only).
         if let Err(e) = git.fetch() {
             eprintln!("[update] fetch failed: {e}");
-            return UpdateResult::Failed { reason: format!("fetch: {e}") };
+            return UpdateResult::Failed {
+                reason: format!("fetch: {e}"),
+            };
         }
         let local = match git.current_head() {
             Ok(h) => h,
@@ -84,22 +90,34 @@ impl AutoUpdater {
         if let Err(e) = run_git(
             Path::new(&self.cfg.system.repo_dir),
             &self.git_bin(),
-            &["worktree", "add", "--detach", stage_root.to_str().unwrap_or(""), &tracking],
+            &[
+                "worktree",
+                "add",
+                "--detach",
+                stage_root.to_str().unwrap_or(""),
+                &tracking,
+            ],
         ) {
-            return UpdateResult::Failed { reason: format!("staging worktree: {e}") };
+            return UpdateResult::Failed {
+                reason: format!("staging worktree: {e}"),
+            };
         }
 
         let stage_bin = stage_root.join("target/release/the-quant");
         if let Err(e) = self.build_release_in(&stage_root, &stage_bin.clone()) {
             let _ = self.cleanup_stage(&stage_root);
-            return UpdateResult::Failed { reason: format!("build failed: {e}") };
+            return UpdateResult::Failed {
+                reason: format!("build failed: {e}"),
+            };
         }
 
         // 4. Smoke test the freshly built binary.
         if self.cfg.update.require_smoke_test {
             if let Err(e) = self.smoke_test(&stage_bin) {
                 let _ = self.cleanup_stage(&stage_root);
-                return UpdateResult::Failed { reason: format!("smoke test failed: {e}") };
+                return UpdateResult::Failed {
+                    reason: format!("smoke test failed: {e}"),
+                };
             }
         }
 
@@ -109,12 +127,16 @@ impl AutoUpdater {
         let _ = std::fs::remove_file(&prev);
         if let Err(e) = std::fs::rename(&current, &prev) {
             let _ = self.cleanup_stage(&stage_root);
-            return UpdateResult::Failed { reason: format!("cannot back up current binary: {e}") };
+            return UpdateResult::Failed {
+                reason: format!("cannot back up current binary: {e}"),
+            };
         }
         if let Err(e) = std::fs::rename(&stage_bin, &current) {
             let _ = std::fs::rename(&prev, &current);
             let _ = self.cleanup_stage(&stage_root);
-            return UpdateResult::Failed { reason: format!("cannot promote new binary: {e}") };
+            return UpdateResult::Failed {
+                reason: format!("cannot promote new binary: {e}"),
+            };
         }
 
         // 6. Fast-forward the live branch to the remote (source refresh only).
@@ -149,7 +171,12 @@ impl AutoUpdater {
         run_git(
             Path::new(&self.cfg.system.repo_dir),
             &self.git_bin(),
-            &["worktree", "remove", "--force", stage_root.to_str().unwrap_or("")],
+            &[
+                "worktree",
+                "remove",
+                "--force",
+                stage_root.to_str().unwrap_or(""),
+            ],
         )
         .map(|_| ())
         .map_err(|e| e)

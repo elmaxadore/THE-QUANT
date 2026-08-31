@@ -11,6 +11,17 @@
 //! The daemon (systemd) runs `the-quant daemon` which starts the update
 //! scheduler loop in the background.
 
+// The v4.0 spec ships forward-looking scaffolding (ONNX backends, MT5
+// execution, regime detection, web dashboard, reserved config fields) ahead
+// of its wiring. Silence the resulting dead-code diagnostics without hiding
+// logic bugs elsewhere. Remove this once every module is fully wired.
+
+// The v4.0 spec ships forward-looking scaffolding (ONNX backends, MT5
+// execution, regime detection, web dashboard, reserved config fields) ahead
+// of its wiring. Silence the resulting dead-code diagnostics without hiding
+// logic bugs elsewhere. Remove this once every module is fully wired.
+#![allow(dead_code)]
+
 mod config;
 mod engine;
 mod execution;
@@ -27,14 +38,17 @@ mod strategy;
 mod update;
 mod util;
 
+mod aegis;
+mod desk;
 mod tui;
+mod universe;
 #[cfg(feature = "web")]
 mod web;
 
 use config::Config;
 use onnx::ModelBackend;
-use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -80,7 +94,10 @@ fn main() {
         "restore" | "--restore" => {
             let r = state::Restorer::new(&cfg);
             match r.restore() {
-                Ok(()) => println!("state restored/reconstructed under {}/", cfg.system.state_dir),
+                Ok(()) => println!(
+                    "state restored/reconstructed under {}/",
+                    cfg.system.state_dir
+                ),
                 Err(e) => eprintln!("restore failed: {e}"),
             }
         }
@@ -90,6 +107,24 @@ fn main() {
         }
         "vault" => {
             vault_cmd(&cfg, &args);
+        }
+        "scan" => {
+            // `the-quant scan [top_n]` — inspect the shared knowledge base:
+            // what the system has learned about every canonical asset across
+            // ALL accounts/brokers (observations, EWMA vol/drift, trades).
+            let top: usize = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(20);
+            let path = cfg.state_root().join("knowledge.json");
+            if !path.exists() {
+                println!("no knowledge base yet — run `the-quant paper` first");
+            } else {
+                let kb = universe::KnowledgeBase::load(&path);
+                let assets = kb.assets.len();
+                println!(
+                    "shared knowledge base: {assets} canonical assets ({})\n",
+                    path.display()
+                );
+                print!("{}", kb.summary(top));
+            }
         }
         other => {
             eprintln!("unknown command: {other}");
@@ -112,14 +147,17 @@ fn print_help() {
          \x20 the-quant vault check      verify the master password\n\
          \x20 the-quant vault status     show vault state\n\
          \x20 the-quant daemon           run scheduler (systemd)\n\
+         \x20 the-quant scan [N]         show what was learned (knowledge base)\n\
          \x20 the-quant --smoke          self-check used by auto-update"
     );
 }
 
 fn print_status(cfg: &Config, profile: &resource::ResourceProfile) {
     println!("{}", profile.summary());
-    println!("account type: {}  account.drawdown cap {}%  risk/trade {}%",
-             cfg.account.r#type, cfg.account.max_drawdown_pct, cfg.account.risk_per_trade_pct);
+    println!(
+        "account type: {}  account.drawdown cap {}%  risk/trade {}%",
+        cfg.account.r#type, cfg.account.max_drawdown_pct, cfg.account.risk_per_trade_pct
+    );
     println!("state dir: {} (git sync backend)", cfg.system.state_dir);
     let upd = update::AutoUpdater::new(cfg.clone());
     match &upd.git {
@@ -133,13 +171,22 @@ fn print_status(cfg: &Config, profile: &resource::ResourceProfile) {
     println!("ml: model={} enabled={}", cfg.ml.model_path, cfg.ml.enabled);
 }
 
-fn run_paper(cfg: &Config, profile: &resource::ResourceProfile, model: &dyn ModelBackend, n: usize) {
-    println!("[the-quant] booted {} ({})", profile.tier, model.name());
-    let stats = engine::run_paper_trade(cfg, profile, model, n).unwrap_or_else(|e| {
+fn run_paper(
+    cfg: &Config,
+    profile: &resource::ResourceProfile,
+    _model: &dyn ModelBackend,
+    n: usize,
+) {
+    println!(
+        "[the-quant] booted {} ({} desks)",
+        profile.tier,
+        cfg.accounts.len().max(1)
+    );
+    let stats = engine::run_multi_desk(cfg, profile, n).unwrap_or_else(|e| {
         eprintln!("paper trade error: {e}");
         std::process::exit(1);
     });
-    tui::report(cfg, &stats);
+    tui::report_multi(cfg, &stats);
 }
 
 fn backup(cfg: &Config) {
@@ -222,6 +269,9 @@ fn daemon(cfg: &Config, _profile: &resource::ResourceProfile) {
     let mut store = state::Store::new(cfg).expect("store");
     let upd = update::AutoUpdater::new(cfg.clone());
     let stop = Arc::new(AtomicBool::new(false));
-    eprintln!("[the-quant] daemon: update scheduler every {}h", upd.interval_hours);
+    eprintln!(
+        "[the-quant] daemon: update scheduler every {}h",
+        upd.interval_hours
+    );
     upd.scheduler_loop(&mut store, stop);
 }

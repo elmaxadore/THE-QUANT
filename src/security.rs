@@ -72,14 +72,12 @@ pub mod crypto {
     ) -> Result<Vec<u8>, String> {
         let cipher = Aes256Gcm::new_from_slice(key).map_err(|e| format!("cipher: {e}"))?;
         let n = Nonce::from_slice(nonce);
-        cipher.encrypt(n, plaintext).map_err(|e| format!("encrypt: {e}"))
+        cipher
+            .encrypt(n, plaintext)
+            .map_err(|e| format!("encrypt: {e}"))
     }
 
-    pub fn decrypt(
-        key: &[u8; 32],
-        nonce: &[u8; NONCE_LEN],
-        ct: &[u8],
-    ) -> Result<Vec<u8>, String> {
+    pub fn decrypt(key: &[u8; 32], nonce: &[u8; NONCE_LEN], ct: &[u8]) -> Result<Vec<u8>, String> {
         let cipher = Aes256Gcm::new_from_slice(key).map_err(|e| format!("cipher: {e}"))?;
         let n = Nonce::from_slice(nonce);
         cipher.decrypt(n, ct).map_err(|e| format!("decrypt: {e}"))
@@ -99,7 +97,9 @@ pub struct Vault {
 
 impl Vault {
     pub fn new(cfg: &Config) -> Self {
-        Vault { path: cfg.state_root().join("vault.enc") }
+        Vault {
+            path: cfg.state_root().join("vault.enc"),
+        }
     }
 
     /// Create a new vault from a master password: writes salt + verifier, then
@@ -212,7 +212,8 @@ mod tests {
         cfg.system.state_dir = dir.to_str().unwrap().to_string();
         let v = Vault::new(&cfg);
         let key = v.init("hunter2").unwrap();
-        v.seal_file(&key, "mt5_credentials", b"login=123456;password=secret").unwrap();
+        v.seal_file(&key, "mt5_credentials", b"login=123456;password=secret")
+            .unwrap();
         let got = v.open_file(&key, "mt5_credentials").unwrap();
         assert_eq!(got, b"login=123456;password=secret");
         assert!(v.open("not-the-password").is_err());

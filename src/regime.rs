@@ -37,7 +37,10 @@ pub struct RegimeDetector {
 
 impl RegimeDetector {
     pub fn new(max_history: usize) -> Self {
-        RegimeDetector { history: Vec::new(), max_history }
+        RegimeDetector {
+            history: Vec::new(),
+            max_history,
+        }
     }
 
     pub fn latest(&self) -> Option<Regime> {

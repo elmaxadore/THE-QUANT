@@ -129,7 +129,13 @@ impl ResourceProfile {
             })
             .collect();
 
-        ResourceProfile { total_ram_mib, hard_process_limit_mib, cpus, tier, budgets }
+        ResourceProfile {
+            total_ram_mib,
+            hard_process_limit_mib,
+            cpus,
+            tier,
+            budgets,
+        }
     }
 
     /// Budget for a module, in bytes.
@@ -173,7 +179,11 @@ impl ResourceProfile {
             self.worker_threads()
         );
         for (name, _bytes) in &self.budgets {
-            out.push_str(&format!("\n  {:<18} {:>8.1} MiB", name, self.budget_mib(name)));
+            out.push_str(&format!(
+                "\n  {:<18} {:>8.1} MiB",
+                name,
+                self.budget_mib(name)
+            ));
         }
         out
     }
@@ -194,9 +204,15 @@ fn tier_for(mib: u64) -> Tier {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    // detect() reads THE_QUANT_RAM_MIB from the process environment, so the
+    // tests that fake it must not race each other on parallel test threads.
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn percentages_sum_to_100() {
+        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // Force a fake 16 GB machine.
         std::env::set_var("THE_QUANT_RAM_MIB", "16384");
         let p = ResourceProfile::detect();
@@ -210,6 +226,7 @@ mod tests {
 
     #[test]
     fn tier_boundaries() {
+        let _g = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         std::env::set_var("THE_QUANT_RAM_MIB", "4096");
         let p = ResourceProfile::detect();
         assert_eq!(p.tier, Tier::One);

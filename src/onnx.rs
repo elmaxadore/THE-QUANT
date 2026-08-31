@@ -13,7 +13,6 @@
 //! zero external ML dependencies.
 
 use crate::config::Config;
-use std::sync::Arc;
 
 /// Width of the input the model expects — matches `N_FEATURES`.
 pub const MODEL_INPUT_DIM: usize = 12;
@@ -48,18 +47,18 @@ impl RuleModel {
         // trainer would refine into a real .onnx.
         RuleModel {
             weights: [
-                0.6, /* log_return_1 */
-                0.8, /* log_return_5 */
+                0.6,  /* log_return_1 */
+                0.8,  /* log_return_5 */
                 -0.4, /* realized_vol */
-                0.0, /* rsi */
-                0.0, /* atr */
-                0.9, /* ema_diff */
+                0.0,  /* rsi */
+                0.0,  /* atr */
+                0.9,  /* ema_diff */
                 -0.2, /* bb_width */
-                0.1, /* volume_zscore */
-                0.0, /* high_low_range */
-                0.0, /* close_position */
-                0.3, /* hurst */
-                0.7, /* roc_10 */
+                0.1,  /* volume_zscore */
+                0.0,  /* high_low_range */
+                0.0,  /* close_position */
+                0.3,  /* hurst */
+                0.7,  /* roc_10 */
             ],
             bias: 0.0,
         }
@@ -140,13 +139,13 @@ impl ModelBackend for OrtModel {
 }
 
 /// A thin factory that picks the best available backend.
-pub fn load_backend(cfg: &Config) -> Result<Box<dyn ModelBackend>, String> {
+pub fn load_backend(_cfg: &Config) -> Result<Box<dyn ModelBackend>, String> {
     #[cfg(feature = "ml")]
     {
         if cfg.ml.enabled && std::path::Path::new(&cfg.ml.model_path).exists() {
-            return Ok(Box::new(OrtModel::load(
-                std::path::Path::new(&cfg.ml.model_path),
-            )?));
+            return Ok(Box::new(OrtModel::load(std::path::Path::new(
+                &cfg.ml.model_path,
+            ))?));
         }
     }
     Ok(Box::new(RuleModel::new()))
@@ -159,7 +158,9 @@ mod tests {
     #[test]
     fn rule_model_produces_finite_signal() {
         let m = RuleModel::new();
-        let f = [0.05, 0.03, 0.002, 50.0, 0.001, 0.01, 0.02, 0.5, 0.01, 0.5, 0.6, 0.04];
+        let f = [
+            0.05, 0.03, 0.002, 50.0, 0.001, 0.01, 0.02, 0.5, 0.01, 0.5, 0.6, 0.04,
+        ];
         let (sig, conf) = m.predict(&f);
         assert!(sig.is_finite());
         assert!((0.0..=1.0).contains(&conf));

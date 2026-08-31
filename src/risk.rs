@@ -7,7 +7,6 @@
 //! opportunity.
 
 use crate::config::AccountCfg;
-use crate::state::AccountState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RiskDecision {
@@ -160,7 +159,11 @@ mod tests {
         cfg.account.max_drawdown_pct = 5.0;
         let mut risk = RiskEngine::new(cfg.account.clone());
         risk.observe_equity(10_000.0); // peak
-        let ctx = RiskContext { equity: 9_000.0, day_start_equity: 10_000.0, ..Default::default() };
+        let ctx = RiskContext {
+            equity: 9_000.0,
+            day_start_equity: 10_000.0,
+            ..Default::default()
+        };
         risk.observe_equity(9_000.0);
         let res = risk.pre_flight(&ctx, 50.0);
         assert!(matches!(res, RiskDecision::Deny(_)));
