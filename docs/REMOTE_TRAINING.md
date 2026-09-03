@@ -165,6 +165,30 @@ git add reports/ models/ && git commit -m "results: first remote training run"
 Two git branches do all the work: `colab-jobs` (queue + statuses) and
 `colab-artifacts` (immutable result history) — both browsable on GitHub.
 
+## How checkpointing makes training survive Colab disconnections
+
+Free Colab runtimes die without warning (~90 min active-use limit, ~12h
+idle timeout). Without checkpointing, a 100-epoch training run that dies at
+epoch 47 would lose **all** progress. With checkpointing:
+
+1. **Stage-level resume.** The pipeline runs 7 stages in order:
+   `download → features → train_mlp → train_xgb → backtest → grid_search → export`.
+   After each stage, its output is saved to a checkpoint file. On restart,
+   completed stages are skipped — only the incomplete ones run.
+
+2. **Training-level resume.** Within `train_mlp`, model weights are saved
+   every 10 epochs (configurable). If Colab dies at epoch 47, the pipeline
+   resumes from the epoch-40 checkpoint, not from scratch.
+
+3. **Artifact push.** Checkpoints are periodically committed to the
+   `colab-artifacts` branch on GitHub. Even if the entire runtime is lost,
+   a fresh clone + `pull` recovers every checkpoint.
+
+This means a training job can survive **any number** of Colab disconnections
+and always makes forward progress. You never pay for compute twice.
+
+To disable checkpointing: `python3 train_pipeline.py --no-checkpoint`.
+
 ## Troubleshooting
 
 - **`401`/`403` in the agent log** → wrong/expired token, or Contents
