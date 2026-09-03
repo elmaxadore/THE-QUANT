@@ -41,6 +41,36 @@ def find_repo():
     return CLONE_PATH
 
 
+def restore_data(repo):
+    """Ensure the repo's histdata CSVs exist, restoring them from the
+    colab-artifacts branch if needed (e.g. after a fresh clone)."""
+    hist = os.path.join(repo, "python", "data", "histdata")
+    if glob.glob(os.path.join(hist, "*.csv")):
+        return
+    print("[job] no data CSVs in repo — restoring from colab-artifacts",
+          flush=True)
+    subprocess.run(["git", "-C", repo, "fetch", "origin", "colab-artifacts"],
+                   capture_output=True)
+    r = subprocess.run(["git", "-C", repo, "ls-tree", "-r", "--name-only",
+                        "FETCH_HEAD"], capture_output=True, text=True)
+    os.makedirs(hist, exist_ok=True)
+    n = 0
+    for rel in r.stdout.split():
+        if not rel.endswith(".csv"):
+            continue
+        content = subprocess.run(
+            ["git", "-C", repo, "show", f"FETCH_HEAD:{rel}"],
+            capture_output=True).stdout
+        dest = os.path.join(hist, os.path.basename(rel))
+        with open(dest, "wb") as f:
+            f.write(content)
+        print(f"[job] restored {rel} ({len(content):,} bytes)", flush=True)
+        n += 1
+    if n == 0:
+        print("[job] WARNING: no CSVs on colab-artifacts — run "
+              "colab/jobs/download_data.py first!", flush=True)
+
+
 def main():
     t0 = time.time()
     try:
@@ -50,6 +80,7 @@ def main():
     extra = list(params.get("train_args", []))
 
     repo = find_repo()
+    restore_data(repo)
     pipeline = os.path.join(repo, "python", "research", "train_pipeline.py")
     artifacts_dir = os.environ.get("COLAB_ARTIFACTS_DIR", os.getcwd())
     os.makedirs(artifacts_dir, exist_ok=True)

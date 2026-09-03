@@ -533,6 +533,11 @@ Legacy single-purpose trainers (`python/train/train_gbdt.py`,
 
 ### ☁️ Google Colab Cloud Training Integration
 
+> 📖 **Full step-by-step setup tutorial: [`docs/REMOTE_TRAINING.md`](docs/REMOTE_TRAINING.md)**
+> — covers the GitHub token, Colab/Kaggle/Codespaces/VM agents, queueing,
+> recovering outputs, and troubleshooting. Only the token creation and
+> starting the notebook require manual steps.
+
 Train the heavy model + run all strategy research on a **Colab GPU**, and only
 collect the output artifacts back into the repo:
 
