@@ -24,6 +24,7 @@ import tempfile
 import time
 
 ARTIFACTS_BRANCH = "colab-artifacts"
+JOBS_BRANCH = "colab-jobs"
 
 
 def _run(cmd, cwd=None, check=True, capture=True):

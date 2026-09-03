@@ -315,21 +315,31 @@ def cmd_enqueue(args):
 
 def cmd_status(args):
     """Show queued/claimed/completed jobs on the colab-jobs branch."""
-    subprocess.run(["git", "-C", ROOT_DIR, "fetch", "origin",
-                    persist.JOBS_BRANCH, persist.ARTIFACTS_BRANCH],
-                   capture_output=True)
+    from colab import persist
+    # fetch each branch separately — the artifacts branch may not exist yet
+    for branch in (persist.JOBS_BRANCH, persist.ARTIFACTS_BRANCH):
+        subprocess.run(
+            ["git", "-C", ROOT_DIR, "fetch", "origin",
+             f"{branch}:refs/remotes/origin/{branch}"],
+            capture_output=True)
     for branch, label in [(persist.JOBS_BRANCH, "JOB QUEUE"),
                           (persist.ARTIFACTS_BRANCH, "ARTIFACTS")]:
         print(f"--- {label} (origin/{branch}) ---")
-        subprocess.run(["git", "-C", ROOT_DIR, "log", "--oneline", "-8",
-                        f"origin/{branch}"], check=False)
+        r = subprocess.run(["git", "-C", ROOT_DIR, "log", "--oneline", "-8",
+                            f"origin/{branch}"], check=False,
+                           capture_output=True, text=True)
+        print(r.stdout.rstrip() if r.returncode == 0
+              else "(branch not created yet — nothing queued/pushed)")
 
 
 def cmd_pull(args):
     """Recover every artifact from the colab-artifacts branch into the repo."""
     from colab import persist
-    subprocess.run(["git", "-C", ROOT_DIR, "fetch", "origin",
-                    persist.ARTIFACTS_BRANCH], capture_output=True)
+    subprocess.run(
+        ["git", "-C", ROOT_DIR, "fetch", "origin",
+         f"{persist.ARTIFACTS_BRANCH}:refs/remotes/origin/"
+         f"{persist.ARTIFACTS_BRANCH}"],
+        capture_output=True)
     files = persist.list_artifacts(ROOT_DIR)
     if not files:
         print("[!] No artifacts found on origin/"
