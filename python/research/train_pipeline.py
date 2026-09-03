@@ -388,9 +388,13 @@ def split_series(X, y, ep):
     return ((X[:t1], y[:t1]), (X[t1:t2], y[t1:t2]), (X[t2:], y[t2:]))
 
 
-def train_torch(Xtr, ytr, Xva, yva, args):
+def train_torch(Xtr, ytr, Xva, yva, args, ckpt=None):
     """Train the MLP and export ONNX (input 'input' [N,12], output 'output'
-    [N,1]). Best epoch chosen on the validation split (early stopping)."""
+    [N,1]). Best epoch chosen on the validation split (early stopping).
+
+    If ckpt is a TrainingCheckpoint, saves weights every N epochs and
+    resumes from the last checkpoint on restart (survives Colab disconnections).
+    """
     try:
         import torch
         import torch.nn as nn
@@ -425,9 +429,33 @@ def train_torch(Xtr, ytr, Xva, yva, args):
 
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     lossf = nn.MSELoss()
+
+    # Training loop checkpointing (resume across Colab disconnections)
+    train_ckpt = None
+    start_epoch = 1
+    if ckpt:
+        from python.research.checkpoint import TrainingCheckpoint
+        train_ckpt = TrainingCheckpoint(
+            args.job_name, "train_ckpt",
+            args.checkpoint_dir or os.path.join(ROOT, "checkpoints"),
+            every_n_epochs=10)
+        resume = train_ckpt.load_latest()
+        if resume:
+            # Load model weights
+            state_dict = {}
+            for k, v in resume["model_state"].items():
+                state_dict[k] = torch.tensor(v)
+            model.load_state_dict(state_dict)
+            # Load optimizer state
+            if resume["optimizer_state"]:
+                opt.load_state_dict(resume["optimizer_state"])
+            start_epoch = resume["epoch"] + 1
+            print(f"[mlp] resuming from epoch {resume['epoch']} "
+                  f"(val_loss={train_ckpt.get_best_loss():.5f})", flush=True)
+
     best = None
     patience = 0
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(start_epoch, args.epochs + 1):
         model.train()
         running = 0.0
         for xb, yb in loader:
@@ -453,6 +481,9 @@ def train_torch(Xtr, ytr, Xva, yva, args):
                 print(f"[mlp] early stop @ epoch {epoch} (best={best[0]:.5f} "
                       f"e{best[2]})", flush=True)
                 break
+        # Save training checkpoint every N epochs
+        if train_ckpt and train_ckpt.should_save(epoch):
+            train_ckpt.save(epoch, model.state_dict(), opt.state_dict(), va_loss)
 
     model.load_state_dict(best[1])
     model.eval()
@@ -737,6 +768,12 @@ def main():
     ap.add_argument("--lr", type=float, default=3e-3)
     ap.add_argument("--seed-pairs", default=",".join(DD_DEFAULT),
                     help="seed Aegis pairs (e.g. XAU_XAG,GBP_AUD)")
+    ap.add_argument("--job-name", default="training",
+                    help="checkpoint job name (for resume across Colab sessions)")
+    ap.add_argument("--checkpoint-dir", default="",
+                    help="local checkpoint directory (default: <ROOT>/checkpoints)")
+    ap.add_argument("--no-checkpoint", action="store_true",
+                    help="disable checkpointing")
     args = ap.parse_args()
 
     # Worker forwards CLI parameters as the TRAIN_PARAMS env JSON; merge them
@@ -750,23 +787,65 @@ def main():
         except Exception as e:
             print(f"[pipe] ignoring TRAIN_PARAMS override ({e})", flush=True)
 
+    # --- checkpointing (resume across Colab disconnections) -----------------
+    ckpt_dir = args.checkpoint_dir or os.path.join(ROOT, "checkpoints")
+    from python.research.checkpoint import Checkpoint, should_resume_job
+    ckpt = Checkpoint(args.job_name, ckpt_dir) if not args.no_checkpoint else None
+    if ckpt:
+        progress = ckpt.get_progress()
+        print(f"[pipe] checkpoint: {progress['completed_stages']}/{progress['total_stages']} "
+              f"stages done — next: {progress['next_stage']}", flush=True)
+
     os.makedirs(OUT_MODELS, exist_ok=True)
     os.makedirs(OUT_REPORTS, exist_ok=True)
     symbols_upper = [s.strip().upper() for s in args.symbols.split(",") if s]
     symbols_lower = [s.lower() for s in symbols_upper]
 
     t0 = time.time()
-    frames = ensure_data(symbols_lower, args.start, args.end,
-                         download=bool(args.download))
-    sizes = {k: len(v) for k, v in frames.items()}
-    print(f"[pipe] loaded bars: {sizes}", flush=True)
+
+    # Stage 1: download / load data
+    if ckpt and ckpt.is_done("download"):
+        print("[pipe] checkpoint: download — skipping", flush=True)
+        # Load cached frames from checkpoint if available
+        try:
+            frames_data = ckpt.load("download")
+            # frames_data is a dict of DataFrames; reconstruct frames dict
+            frames = {}
+            for sym in symbols_lower:
+                key = f"{sym}.parquet"
+                if key in frames_data:
+                    frames[sym] = frames_data[key]
+        except FileNotFoundError:
+            frames = None
+    else:
+        frames = None
+
+    if frames is None:
+        frames = ensure_data(symbols_lower, args.start, args.end,
+                             download=bool(args.download))
+        sizes = {k: len(v) for k, v in frames.items()}
+        print(f"[pipe] loaded bars: {sizes}", flush=True)
+        if ckpt:
+            ckpt.save("download", {f"{sym}.parquet": df for sym, df in frames.items()},
+                      fmt="parquet")
+            ckpt.mark_done("download", {"symbols": symbols_lower, "sizes": sizes})
 
     for sym, df in frames.items():
         if df["close"].max() <= 0 or df["close"].min() <= 0:
             print(f"[pipe] WARNING: {sym} has non-positive prices — skipping", flush=True)
 
-    X, y, syms, ep = build_dataset(frames)
-    print(f"[pipe] dataset rows: {len(X):,} (12 features/label each)", flush=True)
+    # Stage 2: features
+    if ckpt and ckpt.is_done("features"):
+        print("[pipe] checkpoint: features — loading cached", flush=True)
+        feat_data = ckpt.load("features")
+        X, y, syms, ep = feat_data["X"], feat_data["y"], feat_data["syms"], feat_data["ep"]
+    else:
+        X, y, syms, ep = build_dataset(frames)
+        print(f"[pipe] dataset rows: {len(X):,} (12 features/label each)", flush=True)
+        if ckpt:
+            ckpt.save("features", {"X": X, "y": y, "syms": syms, "ep": ep}, fmt="numpy")
+            ckpt.mark_done("features", {"rows": len(X)})
+
     if len(X) < 100_000:
         print("[pipe] NOTE: small dataset — results will be noisy", flush=True)
 
@@ -776,8 +855,25 @@ def main():
     print(f"[pipe] split rows: train={len(Xtr):,} val={len(Xva):,} "
           f"test={len(Xte):,}", flush=True)
 
-    mlp_metrics = train_torch(Xtr, ytr, Xva, yva, args)
-    xgb_metrics = train_xgb(Xtr, ytr, Xva, yva)
+    # Stage 3: train MLP
+    if ckpt and ckpt.is_done("train_mlp"):
+        print("[pipe] checkpoint: train_mlp — skipping", flush=True)
+        mlp_metrics = ckpt.load("train_mlp")
+    else:
+        mlp_metrics = train_torch(Xtr, ytr, Xva, yva, args, ckpt=ckpt)
+        if ckpt:
+            ckpt.save("train_mlp", mlp_metrics or {}, fmt="json")
+            ckpt.mark_done("train_mlp", {"done": bool(mlp_metrics)})
+
+    # Stage 4: train XGBoost
+    if ckpt and ckpt.is_done("train_xgb"):
+        print("[pipe] checkpoint: train_xgb — skipping", flush=True)
+        xgb_metrics = ckpt.load("train_xgb")
+    else:
+        xgb_metrics = train_xgb(Xtr, ytr, Xva, yva)
+        if ckpt:
+            ckpt.save("train_xgb", xgb_metrics or {}, fmt="json")
+            ckpt.mark_done("train_xgb", {"done": bool(xgb_metrics)})
 
     model_onnx = os.path.join(OUT_MODELS, "latest.onnx") if mlp_metrics else None
     cost_map = {k: COST_RT.get(k, 0.0002) for k in symbols_upper}
@@ -788,23 +884,47 @@ def main():
         if a.lower() in frames and b.lower() in frames:
             seed_pairs.append((a.lower(), b.lower()))
 
-    print("[backtest] running strategy comparisons...", flush=True)
-    report = {}
-    report["ema_cross"] = strat_ema(frames, cost_map)
-    report["bollinger"] = strat_bollinger(frames, cost_map)
-    report["donchian"] = strat_donchian(frames, cost_map)
-    report["aegis_valid"] = aegis_pairs(frames, cost_map, val_lo, val_hi,
-                                        seed_pairs=seed_pairs)
-    if mlp_metrics:
-        report["mlp_signal"] = strat_mlp(frames, cost_map, model_onnx)
+    # Stage 5: backtest
+    if ckpt and ckpt.is_done("backtest"):
+        print("[pipe] checkpoint: backtest — skipping", flush=True)
+        report = ckpt.load("backtest")
+    else:
+        print("[backtest] running strategy comparisons...", flush=True)
+        report = {}
+        report["ema_cross"] = strat_ema(frames, cost_map)
+        report["bollinger"] = strat_bollinger(frames, cost_map)
+        report["donchian"] = strat_donchian(frames, cost_map)
+        report["aegis_valid"] = aegis_pairs(frames, cost_map, val_lo, val_hi,
+                                            seed_pairs=seed_pairs)
+        if mlp_metrics:
+            report["mlp_signal"] = strat_mlp(frames, cost_map, model_onnx)
+        if ckpt:
+            ckpt.save("backtest", report, fmt="json")
+            ckpt.mark_done("backtest", {"strategies": list(report.keys())})
 
-    best = aegis_hyperparameter_grid(frames, cost_map, val_lo, val_hi)
-    if best:
-        report["aegis_best"] = best
-        report["aegis_test"] = aegis_pairs(
+    # Stage 6: grid search
+    if ckpt and ckpt.is_done("grid_search"):
+        print("[pipe] checkpoint: grid_search — skipping", flush=True)
+        grid_result = ckpt.load("grid_search")
+        if grid_result:
+            report["aegis_best"] = grid_result["best"]
+            report["aegis_test"] = grid_result["test"]
+    else:
+        best = aegis_hyperparameter_grid(frames, cost_map, val_lo, val_hi)
+        if best:
+            report["aegis_best"] = best
+            report["aegis_test"] = aegis_pairs(
             frames, cost_map, test_lo, ep.max() + 1,
             z_entry=best["z_entry"], z_exit=best["z_exit"],
             lookback=best["lookback"], seed_pairs=seed_pairs)
+        if ckpt:
+            grid_result = {"best": best, "test": report.get("aegis_test")}
+            ckpt.save("grid_search", grid_result, fmt="json")
+            ckpt.mark_done("grid_search", {"best_z": best.get("z_entry") if best else None})
+
+    # Stage 7: export (ONNX already done in train_torch; just checkpoint)
+    if ckpt:
+        ckpt.mark_done("export", {"onnx": os.path.exists(model_onnx) if model_onnx else False})
 
     # Buy & hold baseline per symbol
     bh = []
