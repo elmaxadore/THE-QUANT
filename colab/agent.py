@@ -21,6 +21,7 @@ import argparse
 import glob
 import json
 import os
+import signal
 import socket
 import subprocess
 import sys
@@ -34,17 +35,91 @@ import persist  # noqa: E402
 REPO_URL = "https://github.com/elmaxadore/THE-QUANT.git"
 JOBS_BRANCH = "colab-jobs"
 DEFAULT_CLONE = "/content/quant_colab/repo"
+PIDFILE = os.path.join(tempfile.gettempdir(), "the-quant-agent.pid")
+
+
+def is_repo(path):
+    """True if path is a usable git checkout (.git may be dir OR file)."""
+    return bool(path) and os.path.exists(os.path.join(path, ".git"))
+
+
+def repair_or_clone(dest, url=None):
+    """Idempotently ensure `dest` is a fresh-enough clone of `url`.
+
+    Re-running is ALWAYS safe:
+      * valid checkout  -> pull latest, keep going (resumes month caches!)
+      * broken/partial checkout (interrupted clone, missing .git) -> moved
+        aside to <dest>.broken-<ts> and re-cloned
+      * missing -> cloned
+    """
+    url = url or REPO_URL
+    if os.path.exists(dest):
+        if is_repo(dest) and subprocess.run(
+                ["git", "-C", dest, "status", "--porcelain"],
+                capture_output=True).returncode == 0:
+            subprocess.run(["git", "-C", dest, "pull", "--ff-only",
+                            "--quiet"], capture_output=True)
+            return dest
+        backup = f"{dest}.broken-{time.strftime('%Y%m%d-%H%M%S')}"
+        print(f"[agent] '{dest}' is not a valid checkout — "
+              f"moving it to {backup} and re-cloning", flush=True)
+        os.rename(dest, backup)
+    subprocess.run(["git", "clone", url, dest], check=True)
+    return dest
 
 
 def find_or_clone_repo():
     for cand in [os.environ.get("COLAB_REPO_DIR"), DEFAULT_CLONE,
                  os.path.expanduser("~/THE-QUANT"), os.getcwd()]:
-        if cand and os.path.isfile(os.path.join(cand, ".git")):
+        if cand and is_repo(cand) and os.path.isfile(
+                os.path.join(cand, "colab", "agent.py")):
             subprocess.run(["git", "-C", cand, "pull", "--ff-only",
                             "--quiet"], capture_output=True)
             return cand
-    subprocess.run(["git", "clone", REPO_URL, DEFAULT_CLONE], check=True)
-    return DEFAULT_CLONE
+    return repair_or_clone(DEFAULT_CLONE)
+
+
+def _pid_alive_and_agent(pid):
+    """True if pid exists AND is actually an agent process (pid-safety)."""
+    try:
+        os.kill(pid, 0)
+    except (ProcessLookupError, PermissionError, ValueError):
+        return False
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as f:
+            return b"agent.py" in f.read()
+    except OSError:
+        return False
+
+
+def take_over_previous_agent():
+    """Kill any previous agent instance so re-running the notebook cell
+    always yields exactly ONE healthy worker (idempotent start).
+    Returns True if a previous instance was stopped."""
+    stopped = False
+    if os.path.exists(PIDFILE):
+        try:
+            with open(PIDFILE) as f:
+                pid = int(f.read().strip())
+            if _pid_alive_and_agent(pid):
+                os.kill(pid, signal.SIGTERM)
+                print(f"[agent] took over from previous agent (pid {pid})",
+                      flush=True)
+                stopped = True
+                time.sleep(1)
+        except (ValueError, OSError):
+            pass  # stale pidfile
+        finally:
+            try:
+                os.remove(PIDFILE)
+            except OSError:
+                pass
+    return stopped
+
+
+def stop_agent():
+    print("[agent] stopped previous instance"
+          if take_over_previous_agent() else "[agent] no agent running")
 
 
 def list_jobs(repo):
@@ -104,7 +179,13 @@ def main():
     ap.add_argument("--bootstrap", default=None,
                     help="shell command run once at startup (pip install etc)")
     ap.add_argument("--repo", default=None, help="existing repo checkout")
+    ap.add_argument("--stop", action="store_true",
+                    help="stop a previously started agent and exit")
     args = ap.parse_args()
+
+    if args.stop:
+        stop_agent()
+        return
 
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
@@ -116,50 +197,63 @@ def main():
         print(f"[agent] bootstrap: {args.bootstrap}", flush=True)
         subprocess.call(args.bootstrap, shell=True)
 
+    # re-running this script is ALWAYS safe: a previous instance is stopped,
+    # completed jobs are skipped, and interrupted jobs are re-claimed.
+    take_over_previous_agent()
+    with open(PIDFILE, "w") as f:
+        f.write(str(os.getpid()))
+
     repo = args.repo or find_or_clone_repo()
     worker_id = f"{socket.gethostname()}-{os.getpid()}"
     print(f"[agent] repo={repo} worker={worker_id} "
           f"polling {JOBS_BRANCH} every {args.interval}s", flush=True)
 
-    while True:
+    try:
+        while True:
+            try:
+                for job_name in list_jobs(repo):
+                    spec = read_spec(repo, job_name)
+                    if spec is None or spec.get("status") == "completed":
+                        continue
+                    if not persist.claim_job(repo, job_name, JOBS_BRANCH,
+                                             token, worker_id):
+                        continue  # another live worker owns it
+
+                    with tempfile.TemporaryDirectory(
+                            prefix="dq_job_") as work:
+                        materialize_job(repo, job_name, work)
+                        artifacts_dir = os.path.join(work, "artifacts")
+                        rc = run_job(repo, job_name, spec, artifacts_dir)
+
+                        files = [p for p in glob.glob(
+                            os.path.join(artifacts_dir, "**", "*"),
+                            recursive=True) if os.path.isfile(p)]
+                        note = f"rc={rc}, {len(files)} artifact(s)"
+                        try:
+                            persist.push_artifacts(
+                                repo, files, message=f"{job_name}: {note}",
+                                subdir=job_name)
+                        except Exception as exc:
+                            note += f"; PUSH FAILED: {exc}"
+                        persist.release_job(
+                            repo, job_name, JOBS_BRANCH, token,
+                            "completed" if rc == 0 else "failed", note)
+                        print(f"[agent] {job_name} -> "
+                              f"{'completed' if rc == 0 else 'failed'} "
+                              f"({note})", flush=True)
+                    if args.once:
+                        return
+            except KeyboardInterrupt:
+                print("[agent] stopped")
+                return
+            except Exception as exc:
+                print(f"[agent] loop error: {exc}", flush=True)
+            time.sleep(args.interval)
+    finally:
         try:
-            for job_name in list_jobs(repo):
-                spec = read_spec(repo, job_name)
-                if spec is None or spec.get("status") == "completed":
-                    continue
-                if not persist.claim_job(repo, job_name, JOBS_BRANCH,
-                                         token, worker_id):
-                    continue  # another live worker owns it
-
-                with tempfile.TemporaryDirectory(prefix="dq_job_") as work:
-                    materialize_job(repo, job_name, work)
-                    artifacts_dir = os.path.join(work, "artifacts")
-                    rc = run_job(repo, job_name, spec, artifacts_dir)
-
-                    files = [p for p in glob.glob(
-                        os.path.join(artifacts_dir, "**", "*"),
-                        recursive=True) if os.path.isfile(p)]
-                    note = f"rc={rc}, {len(files)} artifact(s)"
-                    try:
-                        persist.push_artifacts(
-                            repo, files, message=f"{job_name}: {note}",
-                            subdir=job_name)
-                    except Exception as exc:
-                        note += f"; PUSH FAILED: {exc}"
-                    persist.release_job(repo, job_name, JOBS_BRANCH, token,
-                                        "completed" if rc == 0 else "failed",
-                                        note)
-                    print(f"[agent] {job_name} -> "
-                          f"{'completed' if rc == 0 else 'failed'} "
-                          f"({note})", flush=True)
-                if args.once:
-                    return
-        except KeyboardInterrupt:
-            print("[agent] stopped")
-            return
-        except Exception as exc:
-            print(f"[agent] loop error: {exc}", flush=True)
-        time.sleep(args.interval)
+            os.remove(PIDFILE)
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":

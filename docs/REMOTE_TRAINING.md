@@ -94,6 +94,13 @@ Run it under `tmux`/`screen` or a systemd unit for permanence.
 > Workers can run **simultaneously** — git-based claiming guarantees each
 > job runs exactly once.
 
+> ♻️ **Re-running anything is always safe.** Run the notebook cells again,
+> restart the agent, re-import the Kaggle notebook — the agent stops its
+> previous instance, reuses/heals the repo clone (broken checkouts are moved
+> aside automatically), skips already-completed jobs, and resumes interrupted
+> ones (stale claims are reclaimed after 2h). You'll never see "destination
+> path already exists" or duplicate work.
+
 ---
 
 ## Step 3 — Queue work (all from your terminal)
@@ -166,6 +173,7 @@ Two git branches do all the work: `colab-jobs` (queue + statuses) and
   Internet is enabled (Kaggle especially).
 - **`WARNING: no CSVs on colab-artifacts`** during training → the download
   job hasn't completed yet; wait for it, then re-enqueue training.
+- **"destination path already exists" / broken clone** → fixed: re-running heals it automatically (moved to a .broken- backup and re-cloned)
 - **Colab asks to reconnect** → normal after ~12h; run the agent cell again.
 - **Download seems slow** → Dukascopy serves ~30k tiny hourly files; with 4
   workers expect roughly 1–3 hours for 3 symbols. The retry pass + month
