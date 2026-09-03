@@ -97,7 +97,13 @@ def main():
         print("[job] torch not installed — MLP stage will be skipped",
               flush=True)
 
-    cmd = [sys.executable, pipeline] + extra
+    # Add checkpoint flags for resume across Colab sessions
+    checkpoint_dir = os.environ.get("COLAB_CHECKPOINT_DIR",
+                                    "/content/quant_colab/checkpoints")
+    cmd = [sys.executable, pipeline] + extra + [
+        "--job-name", os.environ.get("COLAB_JOB_NAME", "training"),
+        "--checkpoint-dir", checkpoint_dir,
+    ]
     print(f"[job] $ {' '.join(cmd)}", flush=True)
     rc = subprocess.call(cmd, cwd=repo)
     print(f"[job] pipeline exited with {rc}", flush=True)
