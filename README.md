@@ -12,7 +12,8 @@ and served inside the Rust core via ONNX Runtime — sub-2 ms inference, with
 Python *never* in the live hot path.
 
 It implements the **Aegis hedged-pairs strategy** — a directional-statistical
-arbitrage system designed for the Blue Guardian Instant 5K prop-firm account:
+arbitrage system trained and validated on **real historical tick data**
+(Dukascopy free feed, see [ML pipeline](#-ml-pipeline-python-offline)):
 
 > *"Given a universe of correlated FX/metal/index pairs, when a probabilistic
 > directional bias is detected on a correlated cluster, construct a hedged
@@ -203,9 +204,9 @@ Each entry spawns an independent `TradingDesk`:
 
 ```toml
 [[accounts]]
-id = "bg-instant-5k-a"
-firm = "blue_guardian"
-initial_balance = 5000.0
+id = "paper-01"
+firm = "personal"
+initial_balance = 25000.0
 ```
 
 ### `[aegis]` — strategy + risk parameters
@@ -386,8 +387,10 @@ mt5_dir = "/home/quant/mt5/files"
 * `primary_timeframe` (global or per account, e.g. `M5`, `M15`) drives the
   day-key bucketing for daily resets and the default bar-window horizon.
 * `time_stop_bars` is in bars of that timeframe (96 × M5 ≈ one trading day).
-* `csv` files in `python/data/histdata/` are **generated locally** by the
-  installer (or `python/data/generate_test_data.py`) — they are not in git.
+* `csv` files in `python/data/histdata/` are **M5 bar CSVs converted locally
+  from real Dukascopy tick data** by `python/data/download_dukascopy.py`
+  (free, no API key; `.bi5` tick files → tick cache → M5 OHLCV). They are
+  generated data, so they are **not** in git.
 * Point `data_source` at `mt5` to run the identical stack live; paper and live
   share every risk gate. The one-line installer sets this up end-to-end:
   1. MT5 terminal installed under Wine (headless, `/auto`)
@@ -515,12 +518,77 @@ Python **never** runs in the live hot path — it trains models that export ONNX
 
 ```bash
 pip install -r python/requirements.txt
-python python/train/train_gbdt.py      # GBDT direction model → .onnx
-python python/data/download_histdata.py   # historical data ingestion
-python python/data/generate_test_data.py  # synthetic fixtures
+# 1) pull real historical tick data (Dukascopy, free) -> M5 bars
+python python/data/download_dukascopy.py --symbols eurusd,gbpusd,xauusd \
+    --start 2023-01-01 --end 2025-12-31 --timeframes M5
+# 2) full research pipeline: features -> PyTorch MLP (ONNX) + XGBoost compare,
+#    then walk-forward backtests of Aegis / EMA / Bollinger / Donchian and an
+#    Aegis hyperparameter grid. Writes models/latest.onnx + reports/*.json
+python python/research/train_pipeline.py --start 2023-01-01
 ```
 
-Drop the exported `.onnx` file under `state/models/` and the Rust core loads it
+Legacy single-purpose trainers (`python/train/train_gbdt.py`,
+`python/train/train_mlp.py`) still exist and train on synthetic data; the
+**research pipeline above is the real-data path** and is what ships models.
+
+### ☁️ Google Colab Cloud Training Integration
+
+Train the heavy model + run all strategy research on a **Colab GPU**, and only
+collect the output artifacts back into the repo:
+
+1. **Launch Colab Worker** — open
+   [`colab/quant_colab_runner.ipynb`](colab/quant_colab_runner.ipynb), set
+   runtime accelerator to **GPU** (T4 / A100 / L4) and run all cells. It clones
+   the latest repo (real-data pipeline incl. the Dukascopy downloader) and
+   prints a public tunnel URL + secret token.
+   > ⚠️ That URL is public — keep the runtime alive only while collecting.
+
+2. **Connect the local repo to your runtime:**
+   ```bash
+   python colab/colab_cli.py connect --url https://xxxx.trycloudflare.com --token quant-colab-secret-key
+   python colab/colab_cli.py info                     # show GPU / VRAM / RAM
+   ```
+
+3. **Run the full real-data pipeline on Colab and stream logs:**
+   ```bash
+   python colab/colab_cli.py train --type custom \
+       --script python/research/train_pipeline.py \
+       --params-json '{"symbols":"eurusd,gbpusd,xauusd,audusd,nzdusd,xagusd","start":"2023-01-01","epochs":80}'
+   ```
+   The worker downloads the Dukascopy ticks, builds features, trains the MLP,
+   backtests Aegis + the other strategies, and grid-searches Aegis — all on
+   your runtime.
+
+4. **Collect only the outputs** (`.onnx` → `models/`, `.json` → `reports/`):
+   ```bash
+   python colab/colab_cli.py collect --job-id <id>
+   ```
+   Then `cargo test`, validate the ONNX, and commit the trained model + reports.
+
+### ☁️ GitHub Codespaces (alternative to Colab)
+
+For a 32-GB CPU Codespace instead of a Colab runtime, run the identical
+pipeline directly (no tunnel needed — Codespaces exposes the repo):
+```bash
+pip install -r python/requirements.txt
+python python/research/train_pipeline.py --start 2023-01-01 --epochs 80
+```
+
+3. **Inspect Runtime Hardware**:
+   ```bash
+   python colab/colab_cli.py info
+   python colab/colab_cli.py runtimes
+   ```
+
+4. **Run Training & Collect ONNX Models**:
+   ```bash
+   python colab/colab_cli.py train --type mlp --epochs 30
+   # Or run the guided interactive wizard:
+   python colab/colab_cli.py interactive
+   ```
+   Trained `.onnx` model files (`latest.onnx`, `mlp.onnx`) and metrics are automatically downloaded into `THE-QUANT/models/` for sub-2ms Rust inference.
+
+Drop the exported `.onnx` file under `models/` and the Rust core loads it
 at boot (`onnx::load_backend`), falling back to the transparent rule-based
 model when no file is present.
 

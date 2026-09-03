@@ -240,7 +240,7 @@ pub struct AegisCfg {
     /// Hard drawdown cap (%)
     #[serde(default = "d_dd")]
     pub max_drawdown_pct: f64,
-    /// Blue Guardian profit consistency (max day/total ratio %)
+    /// Profit consistency guard (max day/total ratio %)
     #[serde(default = "d_consistency")]
     pub consistency_threshold_pct: f64,
     /// Extraction: soft stop beyond max_daily_profit, target of target_daily_profit
@@ -341,7 +341,7 @@ impl Default for AegisCfg {
 }
 
 fn d_acc_id() -> String {
-    "bg-instant-5k".into()
+    "paper-01".into()
 }
 fn d_balance() -> f64 {
     5000.0
@@ -494,17 +494,17 @@ impl Config {
         PathBuf::from(&self.ml.model_path)
     }
 
-    /// The managed accounts to run. Defaults to one Blue Guardian Instant 5K
+    /// The managed accounts to run. Defaults to a neutral PERSONAL paper desk
     /// so the system is always functional even with an empty `[[accounts]]`.
     pub fn managed_accounts(&self) -> Vec<AccountDef> {
         if self.accounts.is_empty() {
             vec![AccountDef {
-                id: "bg-instant-5k".into(),
-                name: "Blue Guardian Instant 5K".into(),
-                firm: "blue_guardian".into(),
-                variant: "instant_5k".into(),
-                initial_balance: 5000.0,
-                r#type: "PROP_FUNDED".into(),
+                id: "paper-01".into(),
+                name: "Paper Desk 01".into(),
+                firm: "personal".into(),
+                variant: "paper".into(),
+                initial_balance: 25000.0,
+                r#type: "PERSONAL".into(),
                 ..AccountDef::default()
             }]
         } else {

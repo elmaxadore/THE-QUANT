@@ -56,26 +56,18 @@ leverage = 30
 # MANAGED ACCOUNTS (v4.0 isolation). Each desk gets its own strategy pool,
 # risk engine and journal. Tier-1 machines comfortably run multiple accounts
 # because each desk is a tiny, stateless struct + a rolling feature window.
-# The default ships two Blue Guardian Instant 5K funded desks (hedged pairs).
+# The default is a single neutral PERSONAL paper desk; keep [[accounts]] empty
+# to run with the built-in default (see src/config.rs managed_accounts()).
 # ---------------------------------------------------------------------------
 [[accounts]]
-id = "bg-instant-5k-a"
-name = "Blue Guardian Instant 5K — A"
-firm = "blue_guardian"
-variant = "instant_5k"
-initial_balance = 5000.0
-type = "PROP_FUNDED"
+id = "paper-01"
+name = "Paper Desk 01"
+firm = "personal"
+variant = "paper"
+initial_balance = 25000.0
+type = "PERSONAL"
 strategy = "aegis"
-
-[[accounts]]
-id = "bg-instant-5k-b"
-name = "Blue Guardian Instant 5K — B"
-firm = "blue_guardian"
-variant = "instant_5k"
-initial_balance = 5000.0
-type = "PROP_FUNDED"
-strategy = "aegis"
-# ---- v4.1 per-account customisation (all optional; inherits [aegis]) -------
+# ---- per-account customisation (all optional; inherits [aegis]) -------
 # Which assets this desk scans:
 #   "all_assets" (default) = every asset the account can trade,
 #   "watchlist"            = only [system].symbols,
@@ -115,7 +107,7 @@ min_bias_magnitude = 0.20
 risk_per_trade_pct = 0.5
 atr_multiplier = 2.0
 time_stop_bars = 96
-# Blue Guardian Instant 5K hard circuit breakers
+# Conservative circuit breakers (safety layer — always enforced)
 shield_max_loss_per_trade = 50.0
 shield_strike_limit = 2
 daily_loss_limit = 150.0

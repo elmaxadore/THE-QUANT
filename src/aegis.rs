@@ -69,7 +69,7 @@ pub enum AegisAction {
     Hold,
 }
 
-/// Live risk state for one managed desk (Blue Guardian Instant 5K spec §1.1).
+/// Live risk state for one managed desk (Aegis desk spec §1.1).
 #[derive(Debug, Clone)]
 pub struct DeskRisk {
     pub starting_equity: f64,

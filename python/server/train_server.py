@@ -58,10 +58,22 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/health"):
             self._send(200, {"ok": True, "role": "offline-training-only"})
         elif self.path.startswith("/status"):
+            colab_info = None
+            try:
+                from colab.colab_bridge import load_colab_config, ColabClient
+                cfg = load_colab_config()
+                if cfg:
+                    c = ColabClient(cfg["url"], cfg["token"])
+                    if c.health_check():
+                        colab_info = c.get_runtime_info()
+            except Exception:
+                pass
+
             self._send(200, {
                 "ok": True,
                 "last_train": last_train,
                 "models_present": sorted(os.listdir(MODELS)) if os.path.isdir(MODELS) else [],
+                "colab_runtime": colab_info,
             })
         else:
             self._send(404, {"ok": False, "error": "not found"})
@@ -71,7 +83,25 @@ class Handler(BaseHTTPRequestHandler):
             result = run_trainer(os.path.join(ROOT, "python", "train", "train_gbdt.py"))
             self._send(200 if result["returncode"] == 0 else 500, result)
         elif self.path.startswith("/train/mlp"):
-            self._send(501, {"ok": False, "error": "MLP trainer not yet wired"})
+            result = run_trainer(os.path.join(ROOT, "python", "train", "train_mlp.py"))
+            self._send(200 if result["returncode"] == 0 else 500, result)
+        elif self.path.startswith("/train/colab"):
+            try:
+                from colab.colab_bridge import load_colab_config, ColabClient
+                cfg = load_colab_config()
+                if not cfg:
+                    self._send(400, {"ok": False, "error": "Colab not configured. Run `python colab/colab_cli.py connect` first."})
+                    return
+                client = ColabClient(cfg["url"], cfg["token"])
+                job_id = client.submit_training_job(model_type="mlp")
+                jinfo = client.wait_for_job(job_id, verbose=False)
+                if jinfo.get("status") == "completed":
+                    client.collect_all_artifacts(job_id)
+                    self._send(200, {"ok": True, "job_id": job_id, "status": "completed"})
+                else:
+                    self._send(500, {"ok": False, "job_id": job_id, "error": "Colab job failed", "detail": jinfo})
+            except Exception as e:
+                self._send(500, {"ok": False, "error": str(e)})
         else:
             self._send(404, {"ok": False, "error": "not found"})
 

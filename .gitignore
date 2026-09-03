@@ -25,6 +25,9 @@ venv/
 # Historical market data is GENERATED locally (python/data/generate_test_data.py)
 # or downloaded (python/data/download_histdata.py) — never committed.
 python/data/histdata/*.csv
+# Raw tick cache + per-symbol tick dirs (large, regenerable from Dukascopy)
+python/data/histdata_cache/
+python/data/ticks/
 
 # Model artifacts are produced by the offline trainer (python/train)
 models/*
@@ -36,3 +39,5 @@ models/*
 *.swo
 .idea/
 .vscode/
+# scratch output
+nohup.out
