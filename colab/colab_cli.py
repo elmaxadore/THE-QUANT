@@ -13,6 +13,7 @@ Clear, user-friendly command-line tool to:
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 
@@ -281,6 +282,88 @@ def cmd_interactive(args):
         print(f"[-] Training job failed: {jinfo.get('returncode')}")
 
 
+def cmd_enqueue(args):
+    """Queue a job on the colab-jobs branch — any running agent picks it up."""
+    from colab import persist
+    import datetime
+    script = args.script or ""
+    params = {}
+    if args.params_json:
+        try:
+            params = json.loads(args.params_json)
+        except json.JSONDecodeError as e:
+            print(f"[-] --params-json is not valid JSON: {e}")
+            sys.exit(1)
+    slug = os.path.splitext(os.path.basename(script or "train"))[0]
+    job_name = args.name or \
+        f"{time.strftime('%Y%m%d-%H%M%S')}-{slug}"
+    spec = {
+        "script": script,
+        "params": params,
+        "status": "pending",
+        "created_at": datetime.datetime.now(
+            datetime.timezone.utc).isoformat(),
+        "created_by": os.environ.get("USER", "local"),
+    }
+    persist.enqueue_job(ROOT_DIR, job_name, spec)
+    print(f"[+] Job '{job_name}' queued. Any running agent "
+          f"(Colab/Kaggle/Codespaces) will pick it up within "
+          f"~{30}s of its poll loop.")
+    print(f"[+] Recover results any time (even days later) with:")
+    print(f"      python3 colab/colab_cli.py pull")
+
+
+def cmd_status(args):
+    """Show queued/claimed/completed jobs on the colab-jobs branch."""
+    subprocess.run(["git", "-C", ROOT_DIR, "fetch", "origin",
+                    persist.JOBS_BRANCH, persist.ARTIFACTS_BRANCH],
+                   capture_output=True)
+    for branch, label in [(persist.JOBS_BRANCH, "JOB QUEUE"),
+                          (persist.ARTIFACTS_BRANCH, "ARTIFACTS")]:
+        print(f"--- {label} (origin/{branch}) ---")
+        subprocess.run(["git", "-C", ROOT_DIR, "log", "--oneline", "-8",
+                        f"origin/{branch}"], check=False)
+
+
+def cmd_pull(args):
+    """Recover every artifact from the colab-artifacts branch into the repo."""
+    from colab import persist
+    subprocess.run(["git", "-C", ROOT_DIR, "fetch", "origin",
+                    persist.ARTIFACTS_BRANCH], capture_output=True)
+    files = persist.list_artifacts(ROOT_DIR)
+    if not files:
+        print("[!] No artifacts found on origin/"
+              f"{persist.ARTIFACTS_BRANCH} yet.")
+        return
+    routes = [(".json", os.path.join(ROOT_DIR, "reports")),
+              (".onnx", os.path.join(ROOT_DIR, "models")),
+              (".csv", os.path.join(ROOT_DIR, "python", "data",
+                                    "histdata"))]
+    counts = {}
+    for rel in files:
+        dest_dir = None
+        for ext, d in routes:
+            if rel.endswith(ext):
+                dest_dir = d
+                break
+        if dest_dir is None:
+            continue
+        os.makedirs(dest_dir, exist_ok=True)
+        content = subprocess.run(
+            ["git", "-C", ROOT_DIR, "show",
+             f"origin/{persist.ARTIFACTS_BRANCH}:{rel}"],
+            capture_output=True).stdout
+        with open(os.path.join(dest_dir, os.path.basename(rel)), "wb") as f:
+            f.write(content)
+        key = dest_dir
+        counts[key] = counts.get(key, 0) + 1
+    print("[+] Restored artifacts:")
+    for d, n in counts.items():
+        print(f"    {n:3d} file(s) -> {os.path.relpath(d, ROOT_DIR)}/")
+    print("[+] Data loss-proof: originals remain on origin/"
+          f"{persist.ARTIFACTS_BRANCH} and are never deleted.")
+
+
 def main():
     parser = argparse.ArgumentParser(description="THE QUANT Google Colab Launcher & Bridge")
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
@@ -318,6 +401,18 @@ def main():
     # interactive
     p_inter = subparsers.add_parser("interactive", help="Guided interactive wizard")
 
+    # enqueue (agent mode — no tunnel needed)
+    p_enq = subparsers.add_parser("enqueue", help="Queue a job for any running remote agent (Colab/Kaggle/Codespaces)")
+    p_enq.add_argument("--script", help="Repo-relative job script, e.g. colab/jobs/download_data.py")
+    p_enq.add_argument("--params-json", help='Params as JSON, e.g. \'{"symbols": "eurusd,xauusd", "start": "2025-01-01"}\'')
+    p_enq.add_argument("--name", help="Optional job name")
+
+    # status
+    p_stat = subparsers.add_parser("status", help="Show remote job queue and artifact history")
+
+    # pull
+    p_pull = subparsers.add_parser("pull", help="Recover all artifacts from the GitHub artifacts branch (data-loss-proof)")
+
     args = parser.parse_args()
 
     if args.command == "connect":
@@ -330,6 +425,12 @@ def main():
         cmd_train(args)
     elif args.command == "collect":
         cmd_collect(args)
+    elif args.command == "enqueue":
+        cmd_enqueue(args)
+    elif args.command == "status":
+        cmd_status(args)
+    elif args.command == "pull":
+        cmd_pull(args)
     elif args.command == "interactive":
         cmd_interactive(args)
     else:

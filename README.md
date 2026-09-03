@@ -565,7 +565,56 @@ collect the output artifacts back into the repo:
    ```
    Then `cargo test`, validate the ONNX, and commit the trained model + reports.
 
-### ☁️ GitHub Codespaces (alternative to Colab)
+### 🛡️ Persistent agent mode — works on Colab, Kaggle & Codespaces, zero data loss
+
+Cloud runtimes are ephemeral (Colab dies after ~12h idle, Kaggle after 12h
+max). The **git job-queue agent** solves this completely — no tunnels, no
+lost work, no babysitting:
+
+- **Job queue** lives on the `colab-jobs` branch of the repo.
+- **Every artifact is committed to the `colab-artifacts` branch the moment
+  it is produced.** If the runtime dies mid-job, everything already
+  persisted survives; a restarted agent re-claims the job automatically
+  (stale claims are reclaimed after 2h).
+- **Recover outputs locally at any time** — even days after the runtime is
+  long gone:
+
+  ```bash
+  python3 colab/colab_cli.py pull      # artifacts -> reports/ models/ python/data/histdata/
+  python3 colab/colab_cli.py status    # job queue + artifact history
+  ```
+
+**Queue work from your machine:**
+
+```bash
+# data collection (real Dukascopy ticks -> M5 bars):
+python3 colab/colab_cli.py enqueue --script colab/jobs/download_data.py \
+    --params-json '{"symbols":"eurusd,gbpusd,xauusd","start":"2025-01-01"}'
+
+# full training pipeline (features -> backtests -> Aegis grid -> GBDT/MLP -> ONNX):
+python3 colab/colab_cli.py enqueue --script colab/jobs/train_data.py \
+    --params-json '{"train_args":["--symbols","eurusd,gbpusd,xauusd"]}'
+```
+
+**Workers that consume the queue** (any ONE of these, or all simultaneously —
+claims prevent double execution):
+
+| Channel | Free compute | Setup |
+|---|---|---|
+| **Google Colab** | T4 GPU, ~12h/session | Open `colab/quant_colab_runner.ipynb` → run cell **2. Persistent agent mode** (paste a GitHub PAT) |
+| **Kaggle** | P100/T4, 30 GPU-h/week | Import `colab/kaggle_agent.ipynb` → enable Internet → add `GITHUB_TOKEN` secret → run |
+| **GitHub Codespaces** | 2-4 core CPU, 120 core-h/month | Terminal: `export GITHUB_TOKEN=$GITHUB_TOKEN` is **automatic** → `python3 colab/agent.py --interval 30` |
+| **Any free VM** (Oracle Free Tier, etc.) | 24/7 | `pip install requests` → `python3 colab/agent.py` under systemd/screen |
+
+The agent needs `GITHUB_TOKEN` (fine-grained PAT, **Contents: read+write**
+on THE-QUANT). It is never committed to the repo.
+
+Round-trip test (no network needed):
+```bash
+python3 -m unittest colab.tests.test_persist -v
+```
+
+### ☁️ GitHub Codespaces (direct run)
 
 For a 32-GB CPU Codespace instead of a Colab runtime, run the identical
 pipeline directly (no tunnel needed — Codespaces exposes the repo):

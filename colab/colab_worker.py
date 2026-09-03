@@ -177,6 +177,23 @@ def run_job_thread(job_id: str, script_path: str, env_vars: dict):
                     })
     ACTIVE_JOBS[job_id]["artifacts"] = artifacts
 
+    # Durable persistence: if a GitHub token is available, commit every
+    # artifact to the colab-artifacts branch immediately. Even if the
+    # runtime dies now, nothing is lost (recover with colab_cli.py pull).
+    if os.environ.get("GITHUB_TOKEN"):
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import persist as _persist
+            _persist.push_artifacts(
+                os.environ.get("COLAB_REPO_DIR", COLAB_WORK_DIR),
+                [a["path"] for a in artifacts],
+                message=f"{job_id}: {ACTIVE_JOBS[job_id]['status']} "
+                        f"({len(artifacts)} files)",
+                subdir=job_id)
+        except Exception as exc:
+            print(f"[worker] artifact persistence failed: {exc}",
+                  file=sys.stderr, flush=True)
+
 
 class ColabWorkerHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
