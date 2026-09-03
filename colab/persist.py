@@ -21,10 +21,17 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import time
+import shutil
 
 ARTIFACTS_BRANCH = "colab-artifacts"
 JOBS_BRANCH = "colab-jobs"
+
+# reusable artifacts clone: frequent small pushes become cheap deltas
+# instead of full branch clones (the download job pushes ~60 part files)
+_art_lock = threading.Lock()
+_art = {"dir": None, "url": None}
 
 
 def _run(cmd, cwd=None, check=True, capture=True):
@@ -43,10 +50,34 @@ def _push_url(repo_dir, token):
     return origin.replace("://", f"://x-access-token:{token}@", 1)
 
 
+def _get_art_clone(push_url, branch):
+    """Return a persistent local clone of the artifacts branch (locked)."""
+    d, url = _art["dir"], _art["url"]
+    if d and os.path.isdir(os.path.join(d, ".git")) and url == push_url:
+        _run(["git", "-C", d, "fetch", "origin", branch], check=False)
+        if _run(["git", "-C", d, "rev-parse", "--verify",
+                 f"origin/{branch}"], check=False).returncode == 0:
+            _run(["git", "-C", d, "reset", "--hard", f"origin/{branch}"],
+                 check=False)
+            _run(["git", "-C", d, "clean", "-fd"], check=False)
+        return d
+    if d:
+        shutil.rmtree(d, ignore_errors=True)
+    d = tempfile.mkdtemp(prefix="dq_art_")
+    if _run(["git", "clone", "--depth", "1", "--branch", branch,
+             push_url, d], check=False).returncode != 0:
+        shutil.rmtree(d, ignore_errors=True)
+        _run(["git", "init", "-b", branch, d])
+        _run(["git", "-C", d, "remote", "add", "origin", push_url])
+    _art["dir"], _art["url"] = d, push_url
+    return d
+
+
 def push_artifacts(repo_dir, files, message=None, branch=ARTIFACTS_BRANCH,
                    token=None, subdir=None):
-    """Commit `files` (absolute paths) to `branch`. Uses a throw-away clone
-    so the running repo/worktree is never disturbed. Returns commit sha."""
+    """Commit `files` (absolute paths) to `branch` under `subdir/`.
+    Thread-safe and delta-based (reuses a local clone); retries once if the
+    remote branch moved underneath us. Returns the pushed commit sha."""
     if token is None:
         token = os.environ.get("GITHUB_TOKEN")
     if not token and "://" in _run(
@@ -57,35 +88,35 @@ def push_artifacts(repo_dir, files, message=None, branch=ARTIFACTS_BRANCH,
     push_url = _push_url(repo_dir, token)
 
     job_label = subdir or f"job-{time.strftime('%Y%m%d-%H%M%S')}"
-    with tempfile.TemporaryDirectory(prefix="dq_persist_") as tmp:
-        # continue the existing artifacts branch; fall back to a fresh one
-        r = _run(["git", "clone", "--depth", "1", "--branch", branch,
-                  push_url, tmp], check=False)
-        if r.returncode != 0:
-            _run(["git", "init", "-b", branch, tmp])
-            _run(["git", "-C", tmp, "remote", "add", "origin", push_url])
+    files = [f for f in files if os.path.isfile(f)]
 
-        copied = 0
+    def stage(d):
         for f in files:
-            if not os.path.isfile(f):
-                continue
-            rel = os.path.join(job_label, os.path.basename(f))
-            dest = os.path.join(tmp, rel)
+            dest = os.path.join(d, job_label, os.path.basename(f))
             os.makedirs(os.path.dirname(dest), exist_ok=True)
             with open(f, "rb") as src, open(dest, "wb") as dst:
                 dst.write(src.read())
-            copied += 1
-
-        _run(["git", "-C", tmp, "add", "-A"])
-        r = _run(["git", "-C", tmp, "commit",
+        _run(["git", "-C", d, "add", "-A"])
+        r = _run(["git", "-C", d, "commit",
                   "-m", message or f"artifacts: {job_label}"], check=False)
-        if r.returncode != 0 and "nothing to commit" not in (r.stderr or ""):
+        if r.returncode != 0 and \
+                "nothing to commit" not in (r.stderr or ""):
             raise RuntimeError("artifact commit failed: " + r.stderr[-400:])
-        if r.returncode != 0 or copied == 0:
-            return None  # nothing new to push
-        _run(["git", "-C", tmp, "push", "origin", branch])
-        sha = _run(["git", "-C", tmp, "rev-parse", "HEAD"]).stdout.strip()
-    print(f"[persist] pushed {copied} artifact(s) to {branch}@{sha[:8]}",
+        return r.returncode == 0
+
+    with _art_lock:
+        d = _get_art_clone(push_url, branch)
+        if not files or not stage(d):
+            return None  # nothing new
+        if _run(["git", "-C", d, "push", "origin", branch],
+                check=False).returncode != 0:
+            # remote moved (e.g. another worker pushed) — resync, retry once
+            _art["dir"] = None  # force a fresh clone next call
+            d = _get_art_clone(push_url, branch)
+            stage(d)
+            _run(["git", "-C", d, "push", "origin", branch])
+        sha = _run(["git", "-C", d, "rev-parse", "HEAD"]).stdout.strip()
+    print(f"[persist] pushed {len(files)} artifact(s) to {branch}@{sha[:8]}",
           flush=True)
     return sha
 

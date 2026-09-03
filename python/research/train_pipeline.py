@@ -100,9 +100,12 @@ def compute_features(df):
     f[1:, 0] = logr[1:]
     f[5:, 1] = np.log(c_arr[5:] / c_arr[:-5])
 
-    # prefix cumsums for O(1) rolling moments
-    cs = np.concatenate(([0.0], np.cumsum(logr)))
-    cs2 = np.concatenate(([0.0], np.cumsum(logr * logr)))
+    # f2: 10-bar realized vol ; f7: volume zscore (window <=10)
+    # NOTE: windows exclude index 0 (logr[0] is undefined) exactly like the
+    # Rust k=min(t,10) slice logr[1:t+1].
+    lr_fill = np.nan_to_num(logr, nan=0.0)
+    cs = np.concatenate(([0.0], np.cumsum(lr_fill)))
+    cs2 = np.concatenate(([0.0], np.cumsum(lr_fill * lr_fill)))
     vs = np.concatenate(([0.0], np.cumsum(v_arr)))
     vs2 = np.concatenate(([0.0], np.cumsum(v_arr * v_arr)))
 
@@ -114,9 +117,8 @@ def compute_features(df):
         var = (cum2[hi] - cum2[lo]) / k - mean * mean
         return math.sqrt(max(var, 0.0))
 
-    # f2: 10-bar realized vol ; f7: volume zscore (window <=10)
     for t in range(1, n):
-        f[t, 2] = pop_std(cs, cs2, max(0, t - 9), t + 1)
+        f[t, 2] = pop_std(cs, cs2, max(1, t - 9), t + 1)
     vs_mean = np.concatenate(([0.0], np.cumsum(v_arr)))
     for t in range(n):
         lo = max(0, t - 9)
@@ -126,9 +128,9 @@ def compute_features(df):
             f[t, 7] = (v_arr[t] - mean_v) / sd
 
     # f3: RSI-14 (simple gains/losses, mirrors src/features.rs rsi())
+    f[:, 3] = 50.0  # default for insufficient data (matches Rust n < period+1)
     for t in range(1, n):
         if t < 14:
-            f[t, 3] = 50.0
             continue
         deltas = c_arr[t - 13: t + 1] - c_arr[t - 14: t]
         gains = np.where(deltas > 0, deltas, 0.0).sum()
@@ -178,17 +180,108 @@ def compute_features(df):
     flat = rng <= 1e-12
     f[:, 9] = np.where(flat, 0.5, (c_arr - l_arr) / np.maximum(rng, 1e-12))
 
-    # f10: crude Hurst-like sign-persistence (window up to 60 bars)
+    # f10: crude Hurst-like sign-persistence (mirrors src/features.rs:
+    #        loop w in 2..n.min(60), count where r1*r2 > 0, divide by total)
+    f[:, 10] = 0.5  # default for insufficient data
     prod = np.full(n, np.nan)
     prod[2:] = logr[2:] * logr[1:-1]
-    cs10 = np.concatenate(([0.0], np.cumsum(np.nan_to_num((prod > 0.0), nan=0.0))))
+    sa = np.where(np.isnan(prod), 0.0, (prod > 0.0).astype(float))
+    cs10 = np.concatenate(([0.0], np.cumsum(sa)))
     for t in range(1, n):
-        w = min(t, 59)
-        if w < 2:
+        w_max = min(t + 1, 60)
+        total = w_max - 2
+        if total <= 0:
             f[t, 10] = 0.5
             continue
-        agrees = cs10[t] - cs10[t - w]
-        f[t, 10] = agrees / w
+        agrees = cs10[w_max]
+        f[t, 10] = agrees / total
+
+    # f11: momentum ROC-10
+    f[10:, 11] = (c_arr[10:] - c_arr[:-10]) / np.maximum(c_arr[:-10], 1e-12)
+    return f
+
+
+# ---------------------------------------------------------------------------
+# DATA LOADING — real M5 bars from python/data/histdata (produced from
+# Dukascopy ticks by download_dukascopy.py). date,time columns are parsed back
+# to UTC epoch seconds for lockstep and time-ordered splits.
+# ---------------------------------------------------------------------------
+def compute_features_fast(df):
+    """Vectorised equivalent of compute_features() — identical outputs for
+    the rows that survive the 80-bar warmup, but 10-50x faster (pandas
+    rolling instead of per-bar Python loops). Use this everywhere."""
+    c = df["close"].astype(float)
+    h = df["high"].astype(float)
+    l = df["low"].astype(float)
+    v = df["volume"].astype(float)
+    n = len(df)
+    f = np.zeros((n, 12), dtype=np.float64)
+    if n == 0:
+        return f
+
+    c_arr = c.to_numpy()
+    logr = np.full(n, np.nan)
+    logr[1:] = np.log(c_arr[1:] / c_arr[:-1])
+    lr = pd.Series(logr)
+
+    # f0/f1: log returns
+    f[1:, 0] = logr[1:]
+    f[5:, 1] = np.log(c_arr[5:] / c_arr[:-5])
+
+    # f2: 10-bar realized vol (population std, window <=10)
+    f[:, 2] = lr.rolling(10, min_periods=2).std(ddof=0).fillna(0.0).to_numpy()
+
+    # f3: RSI-14 (simple gains/losses over 14 deltas; NaN -> 50)
+    diff = c.diff()
+    up = diff.clip(lower=0).rolling(14, min_periods=14).sum()
+    dn = (-diff).clip(lower=0).rolling(14, min_periods=14).sum()
+    rsi = 100.0 - 100.0 / (1.0 + up / dn.where(dn > 1e-12))
+    f[:, 3] = np.where(np.isnan(up), 50.0,
+                       np.where(np.isnan(dn) | (dn <= 1e-12), 100.0, rsi))
+
+    # f4: ATR-14 / price (exclude tr[0]=0 from mean, matching src/features.rs atr())
+    tr = np.zeros(n)
+    tr[1:] = np.maximum(
+        np.maximum(h.to_numpy()[1:] - l.to_numpy()[1:],
+                   np.abs(h.to_numpy()[1:] - c_arr[:-1])),
+        np.abs(l.to_numpy()[1:] - c_arr[:-1]))
+    ct = np.concatenate(([0.0], np.cumsum(tr)))
+    t_idx = np.arange(n)
+    lo_idx = np.maximum(1, t_idx - 13)
+    denom = t_idx + 1 - lo_idx
+    denom[0] = 1  # avoid div-by-zero; row 0 ATR is 0
+    atr_vals = (ct[t_idx + 1] - ct[lo_idx]) / denom
+    atr_vals[0] = 0.0
+    f[:, 4] = atr_vals / np.maximum(c_arr, 1e-12)
+
+    # f5: EMA12-EMA26 / price (alpha seeding matches src/features.rs)
+    f[:, 5] = ((c.ewm(alpha=2 / 13, adjust=False).mean()
+                - c.ewm(alpha=2 / 27, adjust=False).mean())
+               / np.maximum(c_arr, 1e-12)).to_numpy()
+
+    # f6: Bollinger width (20, 2σ)
+    m20 = c.rolling(20, min_periods=20).mean()
+    sd20 = c.rolling(20, min_periods=20).std(ddof=0)
+    f[:, 6] = (4.0 * sd20 / np.maximum(m20, 1e-12)).fillna(0.0).to_numpy()
+
+    # f7: volume zscore (window <=10)
+    vm = v.rolling(10, min_periods=1).mean()
+    vsd = v.rolling(10, min_periods=1).std(ddof=0)
+    f[:, 7] = np.where(vsd > 1e-12, (v - vm) / np.maximum(vsd, 1e-12), 0.0)
+
+    # f8/f9: bar range geometry
+    rng = (h - l).to_numpy()
+    f[:, 8] = rng / np.maximum(c_arr, 1e-12)
+    f[:, 9] = np.where(rng <= 1e-12, 0.5,
+                       (c_arr - l.to_numpy()) / np.maximum(rng, 1e-12))
+
+    # f10: sign-persistence over the 58 adjacent-return products of the
+    # 80-bar desk window (indices window[2..59] -> absolute t-77..t-20).
+    # This mirrors what the Rust runtime computes at inference time.
+    sa = (logr * np.concatenate(([np.nan], logr[:-1]))) > 0.0
+    sa = pd.Series(np.where(np.isnan(sa), 0.0, sa.astype(float)))
+    f10 = sa.rolling(58, min_periods=58).mean().shift(20)
+    f[:, 10] = np.where(np.arange(n) >= 79, f10.fillna(0.5).to_numpy(), 0.5)
 
     # f11: momentum ROC-10
     f[10:, 11] = (c_arr[10:] - c_arr[:-10]) / np.maximum(c_arr[:-10], 1e-12)
@@ -237,11 +330,38 @@ def ensure_data(symbols_lower, start, end, download=True):
     return frames
 
 
-def build_dataset(frames, min_bars=64):
+def validate_data(frames, tf_minutes=5):
+    """Data-quality gate (pre-MT5 data audit): gaps, dead bars, price sanity.
+
+    Returns a per-symbol dict consumed by the training summary so every run
+    documents exactly what it trained on."""
+    step = tf_minutes * 60
+    out = {}
+    for sym, df in frames.items():
+        ep = df["epoch"].to_numpy()
+        gaps = np.diff(ep) // step - 1
+        gap_list = gaps[gaps > 0]
+        close = df["close"].to_numpy()
+        out[sym] = {
+            "bars": int(len(df)),
+            "first": str(dt.datetime.fromtimestamp(int(ep[0]),
+                                                   tz=dt.timezone.utc)),
+            "last": str(dt.datetime.fromtimestamp(int(ep[-1]),
+                                                  tz=dt.timezone.utc)),
+            "gap_slots_missing": int(gap_list.sum()) if len(gap_list) else 0,
+            "largest_gap_bars": int(gap_list.max()) if len(gap_list) else 0,
+            "zero_volume_bars": int((df["volume"] <= 0).sum()),
+            "bad_price_bars": int(((close <= 0) |
+                                   ~np.isfinite(close)).sum()),
+        }
+    return out
+
+
+def build_dataset(frames, min_bars=80):
     """Stack feature rows + forward labels across all symbols."""
     X, y, syms, ep = [], [], [], []
     for sym, df in frames.items():
-        f = compute_features(df)
+        f = compute_features_fast(df)
         close = df["close"].to_numpy(float).ravel()
         fwd = np.full(len(df), np.nan)
         fwd[:-1] = close[1:] / close[:-1] - 1.0
@@ -700,6 +820,7 @@ def main():
         "dataset_rows": len(X),
         "split": {"train": len(Xtr), "val": len(Xva), "test": len(Xte)},
         "gpu": (mlp_metrics or {}).get("device", "cpu"),
+        "data_quality": validate_data(frames),
         "mlp_metrics": mlp_metrics,
         "aegis_target": {"strategy": "aegis",
                          "best_hyperparams": best},

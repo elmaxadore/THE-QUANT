@@ -34,6 +34,9 @@ def find_repo():
     for cand in REPO_CANDIDATES:
         if os.path.isfile(os.path.join(cand, "python", "research",
                                        "train_pipeline.py")):
+            # always run the LATEST committed code (self-updating runtime)
+            subprocess.run(["git", "-C", cand, "pull", "--ff-only",
+                            "--quiet"], capture_output=True)
             return cand
     print(f"[job] repo not found; cloning {REPO_URL} -> {CLONE_PATH}")
     subprocess.run(["git", "clone", "--depth", "1", REPO_URL, CLONE_PATH],
