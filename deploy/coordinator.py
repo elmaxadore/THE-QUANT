@@ -167,6 +167,10 @@ def collect(st):
                           "pull"], cwd=ROOT)
     st["last_artifact_sha"] = sha
     if rc == 0 and first:
+        # stay current (the trading loop's backup commits also touch main)
+        git("fetch", "origin", "main", check=False)
+        if git("rev-parse", "--verify", "origin/main", check=False).returncode == 0:
+            git("rebase", "origin/main", check=False)
         # commit whatever landed in reports/ or models/ (data CSVs stay
         # untracked on main — the trading loop reads them from disk)
         git("add", "reports", "models", check=False)
@@ -175,8 +179,11 @@ def collect(st):
         if diff:
             git("commit", "-m",
                 f"artifacts: pulled from colab-artifacts {sha[:8]}")
-            git("push", "origin", "main")
-            log(f"committed pulled artifacts to main ({sha[:8]})")
+            if git("push", "origin", "main", check=False).returncode == 0:
+                log(f"committed pulled artifacts to main ({sha[:8]})")
+            else:
+                log("WARNING: push to main failed (no credentials?) — "
+                    "artifacts are local; will retry next cycle")
         else:
             log("pull done; nothing new to commit on main")
     return True
