@@ -17,6 +17,37 @@ the moment it is produced, so **a dying runtime never loses work**.
 You only do two things by hand: **create a GitHub token once** and **start an
 agent in a browser notebook**. Everything else is terminal commands.
 
+## The zero-auth worker: GitHub Actions (already live)
+
+`.github/workflows/worker.yml` runs a worker **every 20 minutes for free**
+(public repo = unlimited minutes) using GitHub's built-in token — no PAT, no
+notebook, no session limits. It claims at most one job per run from the same
+queue as every other worker, and installs heavy deps only after a job is
+actually claimed. If pushes are rejected, flip once: *Settings → Actions →
+General → Workflow permissions → Read and write*. Trigger manually via the
+**Run workflow** button on the repo's Actions tab.
+
+## The mission-control server: EC2 coordinator
+
+`deploy/coordinator.py` (systemd: `the-quant-coordinator.service`) runs on the
+always-on 1 GB VPS (~20 MB RSS) and is the **single authority** for pipeline
+flow — workers only execute, never decide:
+
+* **CHAIN** — data download completed and no training job queued → queues the
+  training job with the same symbols.
+* **RETRY** — failed jobs (transient 503s, dead runtime) re-queued after a
+  1 h cool-down, max 3 attempts (`COORD_*` env vars to tune).
+* **COLLECT** — new commits on `colab-artifacts` are pulled; `reports/` +
+  `models/` are committed to `main` **from the server**; data CSVs land in
+  `python/data/histdata/` for the trading loop.
+
+Watch it: `ssh <host> "tail -f ~/THE-QUANT/coordinator.log"`.
+Server push access uses a **deploy key** (never expires, repo-scoped):
+generate once on the server, paste the public key at
+<https://github.com/elmaxadore/THE-QUANT/settings/keys> with write access.
+
+## Adding more worker platforms (all coordinate via the same queue)
+
 ---
 
 ## Step 0 — Local prerequisites (already done on this machine, verify only)
