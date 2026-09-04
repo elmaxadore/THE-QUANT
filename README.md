@@ -510,6 +510,52 @@ sudo cp /usr/local/bin/the-quant{.prev,}   # instant rollback
 The updater always smoke-tests (`the-quant --smoke`) before swapping and keeps
 the previous binary as `the-quant.prev`.
 
+### Small VPS (1 GB RAM, e.g. AWS `t2.micro`/`t3.micro`) — no-Rust-compile deploy
+
+Rust compilation OOMs on 1 GB, so **build locally, ship the binary** (glibc is
+backward compatible: a binary built on older glibc runs on newer). The binary
+peaks at **~14 MB RSS** — the box runs it comfortably with hundreds of MB to
+spare.
+
+```bash
+# 0. one-time: 2 GB swap (essential on 1 GB)
+ssh <host> "sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile \
+  && sudo mkswap /swapfile && sudo swapon /swapfile \
+  && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab"
+
+# 1. get the code (data CSVs are gitignored; generate locally for paper trading)
+ssh <host> "git clone --depth 1 https://github.com/elmaxadore/THE-QUANT.git ~/THE-QUANT \
+  && cd ~/THE-QUANT && python3 python/data/generate_test_data.py"
+
+# 2. build locally, ship
+cargo build --release
+scp target/release/the-quant <host>:/tmp/
+ssh <host> "sudo install /tmp/the-quant /usr/local/bin/the-quant && the-quant --smoke"
+
+# 3. continuous paper loop (trading cycles + daily self-update + git backups)
+scp deploy/run_desk.sh deploy/the-quant-1gb.service <host>:/tmp/
+ssh <host> "install -m 755 /tmp/run_desk.sh ~/THE-QUANT/deploy/ \
+  && sudo cp /tmp/the-quant-1gb.service /etc/systemd/system/the-quant.service \
+  && sudo systemctl daemon-reload && sudo systemctl enable --now the-quant"
+```
+
+`deploy/run_desk.sh` loops `the-quant paper 5000` with cool-downs, pushes the
+state journal to git every 10 cycles, and checks the git repo for updates once
+a day. The unit file caps the service at `MemoryMax=200M` (10x actual usage —
+pure safety net) and logrotate keeps `quant.log` bounded (10 MB x 3).
+
+Swap real data in when it arrives (e.g. from a Colab `pull`):
+
+```bash
+scp python/data/histdata/*.csv <host>:~/THE-QUANT/python/data/histdata/
+ssh <host> "systemctl restart the-quant"
+```
+
+Go live later: add real accounts to `config/system.toml` (see the
+Customisation guide), set `data_source = "mt5"` (requires an MT5 bridge —
+heavy; needs >= 2 GB RAM), or keep the paper loop as a 24/7 strategy monitor.
+
+
 ---
 
 ## 🤖 ML pipeline (Python, offline)
