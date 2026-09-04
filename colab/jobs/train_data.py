@@ -21,19 +21,15 @@ import subprocess
 import sys
 import time
 
-REPO_CANDIDATES = [
-    "/content/quant_colab/repo",
-    os.path.expanduser("~/THE-QUANT"),
-    os.getcwd(),
-]
 REPO_URL = "https://github.com/elmaxadore/THE-QUANT.git"
 CLONE_PATH = "/content/quant_colab/repo"
 
 
 def find_repo():
-    for cand in REPO_CANDIDATES:
-        if os.path.isfile(os.path.join(cand, "python", "research",
-                                       "train_pipeline.py")):
+    for cand in [os.environ.get("COLAB_REPO_DIR"), CLONE_PATH,
+                 os.path.expanduser("~/THE-QUANT"), os.getcwd()]:
+        if cand and os.path.isfile(os.path.join(
+                cand, "python", "research", "train_pipeline.py")):
             # always run the LATEST committed code (self-updating runtime)
             subprocess.run(["git", "-C", cand, "pull", "--ff-only",
                             "--quiet"], capture_output=True)

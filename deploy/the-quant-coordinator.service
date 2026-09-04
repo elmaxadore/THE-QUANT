@@ -1,0 +1,22 @@
+[Unit]
+Description=THE QUANT — mission-control coordinator (queue chaining, retries, artifact collection)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/THE-QUANT
+ExecStart=/usr/bin/python3 /home/ubuntu/THE-QUANT/deploy/coordinator.py
+Restart=on-failure
+RestartSec=60
+MemoryMax=100M
+StandardOutput=append:/home/ubuntu/THE-QUANT/coordinator.log
+StandardError=append:/home/ubuntu/THE-QUANT/coordinator.log
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/ubuntu/THE-QUANT
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

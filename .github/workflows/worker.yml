@@ -1,0 +1,51 @@
+name: quant-worker
+
+# THE QUANT — GitHub Actions as a FREE, PERSISTENT training worker.
+#
+# Why this beats ephemeral notebooks: every run is a fresh, authenticated
+# environment (built-in GITHUB_TOKEN, no PAT to expire), started on a schedule
+# with no session limits. The agent claims at most one job per run from the
+# `colab-jobs` branch — the same queue Colab/Kaggle/Codespaces workers use —
+# so all platforms coordinate without double work.
+#
+# One-time repo setting (if pushes are rejected):
+#   Settings -> Actions -> General -> Workflow permissions -> "Read and write"
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # every 20 minutes (free on public repos)
+  workflow_dispatch:          # manual trigger button
+
+permissions:
+  contents: write             # claim/release jobs + push artifacts
+
+concurrency:
+  group: quant-worker
+  cancel-in-progress: false   # let a running job finish
+
+jobs:
+  work:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "the-quant-worker"
+          git config --global user.email "worker@the-quant.local"
+
+      - name: Claim and run one job (deps install lazily on claim)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COLAB_REPO_DIR: ${{ github.workspace }}
+        run: |
+          python3 colab/agent.py --once --repo "$GITHUB_WORKSPACE" \
+            --bootstrap-on-claim \
+            --bootstrap "pip install -q pandas numpy requests xgboost scikit-learn onnx onnxruntime skl2onnx torch --index-url https://download.pytorch.org/whl/cpu"

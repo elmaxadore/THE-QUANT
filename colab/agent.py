@@ -178,6 +178,8 @@ def main():
                     help="process at most one job then exit")
     ap.add_argument("--bootstrap", default=None,
                     help="shell command run once at startup (pip install etc)")
+    ap.add_argument("--bootstrap-on-claim", action="store_true",
+                    help="defer --bootstrap until a job is claimed (CI pollers)")
     ap.add_argument("--repo", default=None, help="existing repo checkout")
     ap.add_argument("--stop", action="store_true",
                     help="stop a previously started agent and exit")
@@ -193,9 +195,19 @@ def main():
               "injected automatically; on Colab/Kaggle paste a PAT.")
         sys.exit(2)
 
-    if args.bootstrap:
-        print(f"[agent] bootstrap: {args.bootstrap}", flush=True)
-        subprocess.call(args.bootstrap, shell=True)
+    # Lazy bootstrap: with --bootstrap-on-claim the (expensive) dependency
+    # install only runs after a job is actually claimed — pollers on CI
+    # schedulers never pay for deps when the queue is empty.
+    boot = {"done": not args.bootstrap_on_claim}
+
+    def run_bootstrap():
+        if not boot["done"] and args.bootstrap:
+            boot["done"] = True
+            print(f"[agent] bootstrap: {args.bootstrap}", flush=True)
+            subprocess.call(args.bootstrap, shell=True)
+
+    if args.bootstrap and boot["done"]:
+        run_bootstrap()
 
     # re-running this script is ALWAYS safe: a previous instance is stopped,
     # completed jobs are skipped, and interrupted jobs are re-claimed.
@@ -219,6 +231,7 @@ def main():
                                              token, worker_id):
                         continue  # another live worker owns it
 
+                    run_bootstrap()  # deps now — we actually have work
                     with tempfile.TemporaryDirectory(
                             prefix="dq_job_") as work:
                         materialize_job(repo, job_name, work)
