@@ -62,20 +62,34 @@ sudo systemctl enable --now the-quant-coordinator 2>/dev/null
 log "coordinator: $(systemctl is-active the-quant-coordinator)"
 
 # ---- 4. local worker (executes jobs from the shared queue) ----
-if [ -n "${GITHUB_TOKEN:-}" ]; then
-    mkdir -p state
-    PIDFILE="$REPO/state/agent.pid"
-    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
-        log "worker already running (pid $(cat "$PIDFILE"))"
-    else
-        nohup python3 "$REPO/colab/agent.py" --repo "$REPO" --interval 60 \
-            --bootstrap-on-claim \
-            --bootstrap "pip install -q pandas numpy requests \
-                xgboost scikit-learn onnx onnxruntime" \
-            >> "$LOG" 2>&1 &
-        echo $! > "$PIDFILE"
-        log "worker started (pid $!)"
+# Only start a worker here if we have a URL-usable token AND python3-pip
+# (a token with ':' breaks git URLs; without pip the job deps can't install.
+# Otherwise EC2 stays the coordinator/collector and heavier jobs run on
+# GitHub Actions / Colab / Kaggle (with their own token injections) automatically.
+if [ -n "${GITHUB_TOKEN:-}" ] && ! case "$GITHUB_TOKEN" in *:* ) true;; *) false;; esac; then
+    if ! python3 -m pip --version >/dev/null 2>&1; then
+        log "token set but python3-pip missing — worker skipped (pip install: "
+            "$(sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-pip 2>&1 | tail -1))"
     fi
+    if python3 -m pip --version >/dev/null 2>&1; then
+        mkdir -p state
+        PIDFILE="$REPO/state/agent.pid"
+        if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+            log "worker already running (pid $(cat "$PIDFILE"))"
+        else
+            nohup python3 "$REPO/colab/agent.py" --repo "$REPO" --interval 60 \
+                --bootstrap-on-claim \
+                --bootstrap "python3 -m pip install -q --user pandas numpy requests \
+                    xgboost scikit-learn onnx onnxruntime" \
+                >> "$LOG" 2>&1 &
+            echo $! > "$PIDFILE"
+            log "worker started (pid $!)"
+        fi
+    fi
+elif [ -n "${GITHUB_TOKEN:-}" ]; then
+    log "token contains ':' — not URL-usable (git pushes will fail); "
+        "worker skipped. Use a fine-grained PAT (ghp_/github_pat_,no colons)"
+        "in $TOKEN_FILE, or the deploy key from Settings -> Deploy keys."
 else
     log "no token — skipping worker (coordinator still reads the queue)"
 fi
