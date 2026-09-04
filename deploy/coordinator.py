@@ -307,12 +307,7 @@ def main():
             if chain(jobs, st):
                 save_state(st)
             if write_registry(jobs):
-                git("add", "reports/strategy_registry.json", check=False)
-                if git("commit", "-m", "registry: strategy progress update",
-                       check=False).returncode == 0:
-                    if git("push", "origin", "main",
-                           check=False).returncode == 0:
-                        log("registry pushed to main")
+                log("registry updated locally (reports/strategy_registry.json)")
             log(f"queue: {summary}")
             if ok_art and collect(st):
                 save_state(st)

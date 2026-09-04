@@ -54,5 +54,9 @@ trades=$(tail -n 2 "$REPO"/state/trades/*.jsonl 2>/dev/null | tail -1)
 
 # recent coordinator activity
 printf "  %-20s :\n" "recent coordinator"
-tail -n 4 "$REPO/coordinator.log" 2>/dev/null | sed 's/^/      /'
+if command -v journalctl >/dev/null 2>&1; then
+    journalctl -u the-quant-coordinator --no-pager -n 4 2>/dev/null | sed 's/^/      /'
+else
+    tail -n 4 "$REPO/coordinator.log" 2>/dev/null | sed 's/^/      /'
+fi
 echo "═══ end ═══"

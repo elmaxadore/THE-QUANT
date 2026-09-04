@@ -10,9 +10,11 @@ WorkingDirectory=/home/ubuntu/THE-QUANT
 ExecStart=/usr/bin/python3 /home/ubuntu/THE-QUANT/deploy/coordinator.py
 Restart=on-failure
 RestartSec=60
+# --- memory guardrails for a 1 GB box ---
 MemoryMax=100M
-StandardOutput=append:/home/ubuntu/THE-QUANT/coordinator.log
-StandardError=append:/home/ubuntu/THE-QUANT/coordinator.log
+# journald-based logging — cannot be lost/deleted like a log file could
+StandardOutput=journal
+StandardError=journal
 NoNewPrivileges=true
 ProtectSystem=strict
 ReadWritePaths=/home/ubuntu/THE-QUANT
