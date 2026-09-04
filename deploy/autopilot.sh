@@ -87,9 +87,7 @@ if [ -n "${GITHUB_TOKEN:-}" ] && ! case "$GITHUB_TOKEN" in *:* ) true;; *) false
         fi
     fi
 elif [ -n "${GITHUB_TOKEN:-}" ]; then
-    log "token contains ':' — not URL-usable (git pushes will fail); "
-        "worker skipped. Use a fine-grained PAT (ghp_/github_pat_,no colons)"
-        "in $TOKEN_FILE, or the deploy key from Settings -> Deploy keys."
+    log "token contains ':' — not URL-usable (git pushes will fail); worker skipped. Use a fine-grained PAT (ghp_/github_pat_,no colons) in $TOKEN_FILE, or the deploy key from Settings -> Deploy keys."
 else
     log "no token — skipping worker (coordinator still reads the queue)"
 fi
