@@ -70,15 +70,19 @@ def git(*args, check=True):
 
 
 def fetch_branches():
-    ok_jobs = git("fetch", "origin", JOBS_BRANCH, check=False).returncode == 0
-    ok_art = git("fetch", "origin", ARTIFACTS_BRANCH, check=False).returncode == 0
+    # explicit refspecs: shallow single-branch clones only track origin/main,
+    # so a bare `git fetch origin <branch>` never creates origin/<branch>
+    ok_jobs = git("fetch", "origin",
+                  f"{JOBS_BRANCH}:{JOBS_BRANCH}", check=False).returncode == 0
+    ok_art = git("fetch", "origin",
+                 f"{ARTIFACTS_BRANCH}:{ARTIFACTS_BRANCH}",
+                 check=False).returncode == 0
     return ok_jobs, ok_art
 
 
 def read_jobs():
     """Parse every job spec from origin/colab-jobs."""
-    r = git("ls-tree", "-r", "--name-only", f"origin/{JOBS_BRANCH}",
-            check=False)
+    r = git("ls-tree", "-r", "--name-only", JOBS_BRANCH, check=False)
     if r.returncode != 0:
         return {}
     jobs = {}
@@ -87,7 +91,7 @@ def read_jobs():
             continue
         name = path.split("/")[0]
         try:
-            spec = json.loads(git("show", f"origin/{JOBS_BRANCH}:{path}").stdout)
+            spec = json.loads(git("show", f"{JOBS_BRANCH}:{path}").stdout)
             jobs[name] = spec
         except Exception as exc:
             log(f"WARNING: cannot parse {path}: {exc}")
@@ -154,7 +158,7 @@ def chain(jobs, st):
 
 def collect(st):
     """4. COLLECT: pull new artifacts, commit reports/models to main."""
-    r = git("rev-parse", f"origin/{ARTIFACTS_BRANCH}", check=False)
+    r = git("rev-parse", ARTIFACTS_BRANCH, check=False)
     if r.returncode != 0:
         return False
     sha = r.stdout.strip()
@@ -189,6 +193,107 @@ def collect(st):
     return True
 
 
+def registry(jobs):
+    """Build the strategy registry: per-strategy progress + platform map."""
+    now = time.strftime("%FT%TZ", time.gmtime())
+    data_done = any(j.get("script") == DOWNLOAD_JOB and
+                    j.get("status") == "completed" for j in jobs.values())
+    train_jobs = {n: j for n, j in jobs.items()
+                  if j.get("script") == TRAIN_JOB}
+    train_status = "none"
+    workers = []
+    for spec in train_jobs.values():
+        if spec.get("status") in ("queued", "claimed"):
+            train_status = spec["status"]
+            if spec.get("claimed_by"):
+                workers.append(spec["claimed_by"])
+
+    def platform(worker_id):
+        w = (worker_id or "").lower()
+        if "runners" in w or "actions" in w or w.startswith("fv-az"):
+            return "github-actions"
+        if "colab" in w:
+            return "colab"
+        if "kaggle" in w or "kernel" in w:
+            return "kaggle"
+        if "codespace" in w:
+            return "codespaces"
+        return worker_id or "unknown"
+
+    # which strategy reports already exist on main or artifacts?
+    have = {}
+    for pat, key in [
+            ("reports/backtest_ema.json", "ema"),
+            ("reports/backtest_bollinger.json", "bollinger"),
+            ("reports/backtest_donchian.json", "donchian"),
+            ("reports/aegis_grid.json", "aegis"),
+            ("reports/gbdt_metrics.json", "gbdt"),
+            ("reports/mlp_metrics.json", "mlp")]:
+        have[key] = os.path.isfile(os.path.join(ROOT, pat))
+        if not have[key]:
+            have[key] = git("cat-file", "-e",
+                            f"{ARTIFACTS_BRANCH}:{pat}",
+                            check=False).returncode == 0
+
+    def mk(sid, name, done, note=""):
+        status = ("validated" if done else
+                  "training" if train_status == "claimed" else
+                  "queued" if train_status == "queued" else
+                  "awaiting-data" if not data_done else "ready")
+        progress = 100 if done else (85 if train_status == "claimed" else
+                                     20 if train_status == "queued" else
+                                     15 if data_done else 0)
+        return {"id": sid, "name": name, "status": status,
+                "progress_pct": progress,
+                "worked_on_by": sorted(set(map(platform, workers))),
+                "notes": note}
+
+    strategies = [
+        mk("aegis", "Aegis Hedged Pairs (grid search)", have["aegis"],
+           "primary strategy"),
+        mk("gbdt", "XGBoost direction model", have["gbdt"]),
+        mk("mlp", "MLP (torch) direction model", have["mlp"]),
+        mk("ema_cross", "EMA crossover backtest", have["ema"]),
+        mk("bollinger", "Bollinger reversion backtest", have["bollinger"]),
+        mk("donchian", "Donchian breakout backtest", have["donchian"]),
+    ]
+    return {
+        "updated_at": now,
+        "summary": {
+            "total": len(strategies),
+            "validated": sum(1 for s in strategies
+                             if s["status"] == "validated"),
+            "active": sum(1 for s in strategies
+                          if s["status"] in ("training", "queued")),
+            "data_collected": data_done,
+            "queue": {n: j.get("status") for n, j in jobs.items()},
+        },
+        "strategies": strategies,
+    }
+
+
+def write_registry(jobs):
+    """Write reports/strategy_registry.json; returns True when changed."""
+    reg = registry(jobs)
+    path = os.path.join(ROOT, "reports", "strategy_registry.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    old = None
+    if os.path.isfile(path):
+        try:
+            with open(path) as f:
+                old = json.load(f)
+        except Exception:
+            old = None
+    if old == reg:
+        return False
+    with open(path, "w") as f:
+        json.dump(reg, f, indent=2)
+    s = reg["summary"]
+    log(f"registry: {s['total']} strategies | {s['validated']} validated | "
+        f"{s['active']} active | data={'yes' if s['data_collected'] else 'no'}")
+    return True
+
+
 def main():
     log(f"coordinator started (interval={INTERVAL}s, "
         f"max_attempts={MAX_ATTEMPTS})")
@@ -196,13 +301,19 @@ def main():
     while True:
         try:
             ok_jobs, ok_art = fetch_branches()
-            if ok_jobs:
-                jobs = read_jobs()
-                summary = ", ".join(f"{n}:{s.get('status')}"
-                                    for n, s in jobs.items()) or "empty"
-                if chain(jobs, st):
-                    save_state(st)
-                log(f"queue: {summary}")
+            jobs = read_jobs() if ok_jobs else {}
+            summary = ", ".join(f"{n}:{s.get('status')}"
+                                for n, s in jobs.items()) or "empty"
+            if chain(jobs, st):
+                save_state(st)
+            if write_registry(jobs):
+                git("add", "reports/strategy_registry.json", check=False)
+                if git("commit", "-m", "registry: strategy progress update",
+                       check=False).returncode == 0:
+                    if git("push", "origin", "main",
+                           check=False).returncode == 0:
+                        log("registry pushed to main")
+            log(f"queue: {summary}")
             if ok_art and collect(st):
                 save_state(st)
         except Exception as exc:

@@ -332,6 +332,50 @@ def cmd_status(args):
               else "(branch not created yet — nothing queued/pushed)")
 
 
+def cmd_strategies(args):
+    """Show the strategy registry: count, status, progress per platform."""
+    import json
+    for branch in ("colab-jobs", "colab-artifacts"):
+        subprocess.run(["git", "-C", ROOT_DIR, "fetch", "origin",
+                        f"{branch}:refs/remotes/origin/{branch}"],
+                       capture_output=True)
+    path = os.path.join(ROOT_DIR, "reports", "strategy_registry.json")
+    reg = None
+    if os.path.isfile(path):
+        try:
+            reg = json.load(open(path))
+        except Exception:
+            reg = None
+    if reg is None:
+        # live-derive from the artifacts branch if the server hasn't yet
+        r = subprocess.run(["git", "-C", ROOT_DIR, "show",
+                            f"origin/colab-artifacts:"
+                            f"reports/strategy_registry.json"],
+                           capture_output=True, text=True)
+        if r.returncode == 0:
+            try:
+                reg = json.loads(r.stdout)
+            except Exception:
+                reg = None
+    if reg is None:
+        print("[!] No strategy registry yet — the EC2 coordinator writes it "
+              "each cycle once the deploy key is added.")
+        return
+    s = reg["summary"]
+    print(f"=== STRATEGY REGISTRY (updated {reg['updated_at']}) ===")
+    print(f"total={s['total']}  validated={s['validated']}  "
+          f"active={s['active']}  data_collected="
+          f"{'yes' if s['data_collected'] else 'no'}")
+    print(f"queue: {s.get('queue', {})}")
+    print()
+    print(f"{'ID':<12} {'STATUS':<14} {'PROG':>4}  {'WORKED ON BY':<24} NAME")
+    for st in reg["strategies"]:
+        by = ", ".join(st["worked_on_by"]) or "-"
+        bar = "#" * (st["progress_pct"] // 10)
+        print(f"{st['id']:<12} {st['status']:<14} "
+              f"{st['progress_pct']:>3}% {by:<24} {st['name']} [{bar}]")
+
+
 def cmd_pull(args):
     """Recover every artifact from the colab-artifacts branch into the repo."""
     from colab import persist
@@ -423,6 +467,9 @@ def main():
     # pull
     p_pull = subparsers.add_parser("pull", help="Recover all artifacts from the GitHub artifacts branch (data-loss-proof)")
 
+    # strategies
+    subparsers.add_parser("strategies", help="Show strategy registry: count, status, progress per platform")
+
     args = parser.parse_args()
 
     if args.command == "connect":
@@ -441,6 +488,8 @@ def main():
         cmd_status(args)
     elif args.command == "pull":
         cmd_pull(args)
+    elif args.command == "strategies":
+        cmd_strategies(args)
     elif args.command == "interactive":
         cmd_interactive(args)
     else:
