@@ -1,4 +1,19 @@
-```
+# --- Python ---
 __pycache__/
-*.pyc
-```
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- Training artifacts / generated output ---
+*.log
+training_log*.txt
+drift_report.json
+/unsupervised_results/
+
+# --- Rust ---
+/target/
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
