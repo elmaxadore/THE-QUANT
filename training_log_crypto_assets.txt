@@ -1,0 +1,628 @@
+OpenBLAS WARNING - could not determine the L2 cache size on this system, assuming 256k
+OpenBLAS WARNING - could not determine the L2 cache size on this system, assuming 256k
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+Warning: UMAP not available. Using t-SNE for visualization only.
+======================================================================
+THE QUANT v4.1 - COMPLETE TRAINING PIPELINE
+======================================================================
+
+============================================================
+Processing: BTCUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for BTCUSDT (700 days)...
+Fetched 1000 candles for BTCUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for BTCUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for BTCUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=471, Neutral=131, Down=398
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=471, Neutral=131, Down=393
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.353
+✓ Trained mean_reversion strategy for regime 0: F1=0.342
+✓ Trained breakout strategy for regime 0: F1=0.329
+✓ Trained trend strategy for regime 1: F1=0.420
+✓ Trained mean_reversion strategy for regime 1: F1=0.629
+✓ Trained breakout strategy for regime 1: F1=0.431
+[!] Insufficient samples for regime 2: 99
+✓ Trained trend strategy for regime 3: F1=0.200
+✓ Trained mean_reversion strategy for regime 3: F1=0.246
+✓ Trained breakout strategy for regime 3: F1=0.183
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_1_trend.onnx
+✓ Exported strategy: regime_1_mean_reversion.onnx
+✓ Exported strategy: regime_1_breakout.onnx
+✓ Exported strategy: regime_3_trend.onnx
+✓ Exported strategy: regime_3_mean_reversion.onnx
+✓ Exported strategy: regime_3_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 29.000
+  Episode 10: Avg Reward = 29.000
+  Episode 20: Avg Reward = 28.000
+  Episode 30: Avg Reward = 26.000
+  Episode 40: Avg Reward = 26.000
+✓ RL Policy trained, final avg reward: 28.000
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 505
+  Total Return: -100.00%
+  Sharpe Ratio: 10.87
+  Max Drawdown: 0.00%
+  Win Rate: 74.5%
+
+============================================================
+Processing: ETHUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for ETHUSDT (700 days)...
+Fetched 1000 candles for ETHUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for ETHUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for ETHUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=480, Neutral=91, Down=429
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=480, Neutral=90, Down=425
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.500
+✓ Trained mean_reversion strategy for regime 0: F1=0.585
+✓ Trained breakout strategy for regime 0: F1=0.521
+✓ Trained trend strategy for regime 1: F1=0.419
+✓ Trained mean_reversion strategy for regime 1: F1=0.509
+✓ Trained breakout strategy for regime 1: F1=0.429
+✓ Trained trend strategy for regime 2: F1=0.465
+✓ Trained mean_reversion strategy for regime 2: F1=0.511
+✓ Trained breakout strategy for regime 2: F1=0.435
+✓ Trained trend strategy for regime 3: F1=0.587
+✓ Trained mean_reversion strategy for regime 3: F1=0.597
+✓ Trained breakout strategy for regime 3: F1=0.628
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_1_trend.onnx
+✓ Exported strategy: regime_1_mean_reversion.onnx
+✓ Exported strategy: regime_1_breakout.onnx
+✓ Exported strategy: regime_2_trend.onnx
+✓ Exported strategy: regime_2_mean_reversion.onnx
+✓ Exported strategy: regime_2_breakout.onnx
+✓ Exported strategy: regime_3_trend.onnx
+✓ Exported strategy: regime_3_mean_reversion.onnx
+✓ Exported strategy: regime_3_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 28.000
+  Episode 10: Avg Reward = 27.000
+  Episode 20: Avg Reward = 31.000
+  Episode 30: Avg Reward = 30.000
+  Episode 40: Avg Reward = 28.000
+✓ RL Policy trained, final avg reward: 29.000
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 719
+  Total Return: -100.00%
+  Sharpe Ratio: 12.10
+  Max Drawdown: 0.00%
+  Win Rate: 77.9%
+
+============================================================
+Processing: BNBUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for BNBUSDT (700 days)...
+Fetched 1000 candles for BNBUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for BNBUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for BNBUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=473, Neutral=102, Down=425
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=472, Neutral=100, Down=423
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.363
+✓ Trained mean_reversion strategy for regime 0: F1=0.508/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/workspace/python/complete_training_pipeline.py:366: RuntimeWarning: invalid value encountered in divide
+  returns = np.diff(equity_curve) / equity_curve[:-1]
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+
+✓ Trained breakout strategy for regime 0: F1=0.236
+✓ Trained trend strategy for regime 1: F1=0.385
+✓ Trained mean_reversion strategy for regime 1: F1=0.407
+✓ Trained breakout strategy for regime 1: F1=0.393
+✓ Trained trend strategy for regime 2: F1=0.575
+✓ Trained mean_reversion strategy for regime 2: F1=0.551
+✓ Trained breakout strategy for regime 2: F1=0.620
+✓ Trained trend strategy for regime 3: F1=0.599
+✓ Trained mean_reversion strategy for regime 3: F1=0.644
+✓ Trained breakout strategy for regime 3: F1=0.579
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_1_trend.onnx
+✓ Exported strategy: regime_1_mean_reversion.onnx
+✓ Exported strategy: regime_1_breakout.onnx
+✓ Exported strategy: regime_2_trend.onnx
+✓ Exported strategy: regime_2_mean_reversion.onnx
+✓ Exported strategy: regime_2_breakout.onnx
+✓ Exported strategy: regime_3_trend.onnx
+✓ Exported strategy: regime_3_mean_reversion.onnx
+✓ Exported strategy: regime_3_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 26.000
+  Episode 10: Avg Reward = 29.000
+  Episode 20: Avg Reward = 29.000
+  Episode 30: Avg Reward = 29.000
+  Episode 40: Avg Reward = 31.000
+✓ RL Policy trained, final avg reward: 28.900
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 694
+  Total Return: -100.00%
+  Sharpe Ratio: 10.68
+  Max Drawdown: 0.00%
+  Win Rate: 75.1%
+
+============================================================
+Processing: SOLUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for SOLUSDT (700 days)...
+Fetched 1000 candles for SOLUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for SOLUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for SOLUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=513, Neutral=75, Down=412
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=513, Neutral=75, Down=407
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.569
+✓ Trained mean_reversion strategy for regime 0: F1=0.555
+✓ Trained breakout strategy for regime 0: F1=0.541
+✓ Trained trend strategy for regime 1: F1=0.435
+✓ Trained mean_reversion strategy for regime 1: F1=0.458
+✓ Trained breakout strategy for regime 1: F1=0.458
+✓ Trained trend strategy for regime 2: F1=0.584
+✓ Trained mean_reversion strategy for regime 2: F1=0.494
+✓ Trained breakout strategy for regime 2: F1=0.484
+✓ Trained trend strategy for regime 3: F1=0.547
+✓ Trained mean_reversion strategy for regime 3: F1=0.336
+✓ Trained breakout strategy for regime 3: F1=0.730
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_1_trend.onnx
+✓ Exported strategy: regime_1_mean_reversion.onnx
+✓ Exported strategy: regime_1_breakout.onnx
+✓ Exported strategy: regime_2_trend.onnx
+✓ Exported strategy: regime_2_mean_reversion.onnx
+✓ Exported strategy: regime_2_breakout.onnx
+✓ Exported strategy: regime_3_trend.onnx
+✓ Exported strategy: regime_3_mean_reversion.onnx
+✓ Exported strategy: regime_3_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 30.000
+  Episode 10: Avg Reward = 31.000
+  Episode 20: Avg Reward = 30.000
+  Episode 30: Avg Reward = 31.000
+  Episode 40: Avg Reward = 30.000
+✓ RL Policy trained, final avg reward: 29.700
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 740
+  Total Return: -100.00%
+  Sharpe Ratio: 0.00
+  Max Drawdown: 0.00%
+  Win Rate: 73.9%
+
+============================================================
+Processing: XRPUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for XRPUSDT (700 days)...
+Fetched 1000 candles for XRPUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for XRPUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for XRPUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=475, Neutral=106, Down=419
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=472, Neutral=106, Down=417
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.337
+✓ Trained mean_reversion strategy for regime 0: F1=0.340
+✓ Trained breakout strategy for regime 0: F1=0.303
+[!] Insufficient samples for regime 1: 53
+✓ Trained trend strategy for regime 2: F1=0.282
+✓ Trained mean_reversion strategy for regime 2: F1=0.405
+✓ Trained breakout strategy for regime 2: F1=0.393
+[!] Insufficient samples for regime 3: 56
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_2_trend.onnx
+✓ Exported strategy: regime_2_mean_reversion.onnx
+✓ Exported strategy: regime_2_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 26.000
+  Episode 10: Avg Reward = 29.000
+  Episode 20: Avg Reward = 26.000
+  Episode 30: Avg Reward = 29.000
+  Episode 40: Avg Reward = 28.000
+✓ RL Policy trained, final avg reward: 29.500
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 575
+  Total Return: -100.00%
+  Sharpe Ratio: 11.83
+  Max Drawdown: 0.00%
+  Win Rate: 76.2%
+
+============================================================
+Processing: ADAUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for ADAUSDT (700 days)...
+Fetched 1000 candles for ADAUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for ADAUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for ADAUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+
+Target distribution: Up=516, Neutral=60, Down=424
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=516, Neutral=60, Down=419
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.472
+✓ Trained mean_reversion strategy for regime 0: F1=0.417
+✓ Trained breakout strategy for regime 0: F1=0.443
+[!] Insufficient samples for regime 1: 40
+✓ Trained trend strategy for regime 2: F1=0.162
+✓ Trained mean_reversion strategy for regime 2: F1=0.130
+✓ Trained breakout strategy for regime 2: F1=0.130
+✓ Trained trend strategy for regime 3: F1=0.335
+✓ Trained mean_reversion strategy for regime 3: F1=0.017
+✓ Trained breakout strategy for regime 3: F1=0.017
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_2_trend.onnx
+✓ Exported strategy: regime_2_mean_reversion.onnx
+✓ Exported strategy: regime_2_breakout.onnx
+✓ Exported strategy: regime_3_trend.onnx
+✓ Exported strategy: regime_3_mean_reversion.onnx
+✓ Exported strategy: regime_3_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 30.000
+  Episode 10: Avg Reward = 30.000
+  Episode 20: Avg Reward = 29.000
+  Episode 30: Avg Reward = 31.000
+  Episode 40: Avg Reward = 31.000
+✓ RL Policy trained, final avg reward: 30.200
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 712
+  Total Return: -100.00%
+  Sharpe Ratio: 9.86
+  Max Drawdown: 0.00%
+  Win Rate: 75.0%
+
+======================================================================
+PIPELINE COMPLETE
+======================================================================
+Results saved to: /results/training_results.json
+Models saved to: /models
+
+SUMMARY:
+  BTCUSDT:
+    - Return: -100.00%
+    - Sharpe: 10.87
+    - Trades: 505
+  ETHUSDT:
+    - Return: -100.00%
+    - Sharpe: 12.10
+    - Trades: 719
+  BNBUSDT:
+    - Return: -100.00%
+    - Sharpe: 10.68
+    - Trades: 694
+  SOLUSDT:
+    - Return: -100.00%
+    - Sharpe: 0.00
+    - Trades: 740
+  XRPUSDT:
+    - Return: -100.00%
+    - Sharpe: 11.83
+    - Trades: 575
+  ADAUSDT:
+    - Return: -100.00%
+    - Sharpe: 9.86
+    - Trades: 712

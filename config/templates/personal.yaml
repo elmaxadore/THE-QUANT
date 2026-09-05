@@ -1,0 +1,18 @@
+# Personal Trading Account — Template
+# Fully user-defined rules, no prop firm constraints
+firm: personal
+variants:
+  personal:
+    profit_target_pct: ~
+    time_limit_days: ~
+    max_drawdown_pct: 15.0
+    daily_loss_limit_pct: 3.0
+    consistency_required: false
+    shield_enabled: false
+    scaling_enabled: false
+    min_trading_days: 0
+    leverage: 30
+    strategy_bias: long_term
+    risk_per_trade_pct: 1.0
+    target_monthly_pct: 2.0
+default_variant: personal

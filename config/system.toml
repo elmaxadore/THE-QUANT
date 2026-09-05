@@ -1,0 +1,137 @@
+# ================================================================================
+# THE QUANT — system.toml
+# Percentage-scaled autonomous trading configuration.
+# The binary is ONE codebase that scales with the machine. Heavy capabilities
+# are gated by cargo features; runtime budgets are computed from RAM at boot.
+# ================================================================================
+
+[system]
+name = "The Quant"
+# auto-update interval in hours. 24 = check the git repo once a day.
+update_interval_hours = 24
+# Where the binary stores version-control-linked state (the source of truth).
+state_dir = "state"
+config_dir = "config"
+model_dir = "models"
+# Path to the local git repo implementing this codebase. Auto-update reads
+# origin from here and does pull --rebase + blue-green swap.
+repo_dir = "."
+# remote git url shown in github.rs when cloning (set "" to use existing repo)
+repo_remote = "https://github.com/elmaxadore/THE-QUANT"
+# headless: when true, no interactive UI at all (best for systemd/daemon mode)
+headless = false
+# enable quote feed simulation when no live MT5 bridge is reachable
+simulated_feed = true
+# Data source: "sim" (built-in synthetic correlated feed)
+#              "csv" (local CSV files in python/data/histdata)
+#              "mt5" (live MT5 terminal via shared files directory)
+data_source = "csv"
+# MT5 terminal shared-files directory (only used when data_source = "mt5").
+# On Linux this is typically under Wine: /home/quant/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Files
+mt5_dir = "/home/quant/mt5/files"
+symbols = ["EURUSD", "XAUUSD", "GBPUSD"]
+# v4.1 shared learning: one knowledge base across all accounts (recommended).
+# Every desk stays an isolated trader; only market knowledge is pooled.
+share_knowledge = true
+# Full re-evaluation of an asset/pair happens at most once per N bars
+# (cross-broker, per canonical asset). Cheap EWMA observation still runs on
+# every bar. Raise to scan less aggressively, lower for faster reaction.
+scan_min_interval_bars = 10
+# Extra broker symbol aliases merged over the built-in table:
+# left = the symbol your broker shows, right = canonical asset id.
+[system.symbol_aliases]
+# GOLD = "XAUUSD"        # (already built in — example only)
+# NAS100 = "US100"       # (already built in — example only)
+# "US30.cash" = "US30"
+
+[account]
+type = "PERSONAL"          # PERSONAL | PROP_EVALUATION | PROP_FUNDED
+max_drawdown_pct = 5.0     # 5% hard drawdown cap
+daily_loss_limit_pct = 3.0 # daily loss stop
+risk_per_trade_pct = 1.0   # risk per trade
+max_lot_size = 1.0
+leverage = 30
+
+# ---------------------------------------------------------------------------
+# MANAGED ACCOUNTS (v4.0 isolation). Each desk gets its own strategy pool,
+# risk engine and journal. Tier-1 machines comfortably run multiple accounts
+# because each desk is a tiny, stateless struct + a rolling feature window.
+# The default is a single neutral PERSONAL paper desk; keep [[accounts]] empty
+# to run with the built-in default (see src/config.rs managed_accounts()).
+# ---------------------------------------------------------------------------
+[[accounts]]
+id = "paper-01"
+name = "Paper Desk 01"
+firm = "personal"
+variant = "paper"
+initial_balance = 25000.0
+type = "PERSONAL"
+strategy = "aegis"
+# ---- per-account customisation (all optional; inherits [aegis]) -------
+# Which assets this desk scans:
+#   "all_assets" (default) = every asset the account can trade,
+#   "watchlist"            = only [system].symbols,
+#   "custom"               = only `symbols` below.
+universe_mode = "watchlist"
+# include-list for custom mode (and extras for all_assets mode):
+# symbols = ["EURUSD", "GBPUSD"]
+# never scan/trade these (canonicalised; aliases apply):
+# exclude_symbols = ["XAGUSD"]
+# hard ceiling on scanned assets (bounds CPU + keeps the learner focused):
+max_scan_assets = 12
+# discover hedged pairs from measured correlation across the scanned universe:
+auto_pairs = true
+# per-account rule overrides — every [aegis] knob can be tuned here.
+# Overrides are SAFETY-CLAMPED (see src/config.rs): they can tune the
+# strategy but can never disable a circuit breaker or exceed hard caps.
+[accounts.rules]
+# daily_loss_limit = 100.0
+# max_drawdown_pct = 8.0
+# risk_per_trade_pct = 0.4
+# min_correlation = 0.80
+# shield_max_loss_per_trade = 40.0
+# time_stop_bars = 120
+
+
+# ---------------------------------------------------------------------------
+# AEGIS — hedged correlated pairs hypothesis (see Aegis_Hedged_Pairs_Strategy_Spec)
+# ---------------------------------------------------------------------------
+[aegis]
+enabled = true
+primary_timeframe = "M5"
+min_correlation = 0.70
+min_volatility_ratio = 1.30
+max_pairs_active = 5
+min_probability_edge = 0.60
+min_bias_magnitude = 0.20
+risk_per_trade_pct = 0.5
+atr_multiplier = 2.0
+time_stop_bars = 96
+# Conservative circuit breakers (safety layer — always enforced)
+shield_max_loss_per_trade = 50.0
+shield_strike_limit = 2
+daily_loss_limit = 150.0
+lifetime_loss_floor = 250.0
+max_drawdown_pct = 10.0
+consistency_threshold_pct = 15.0
+target_daily_profit = 25.0
+max_daily_profit = 35.0
+
+[update]
+# path to cargo (auto-detected if empty)
+cargo = ""
+# path to git (auto-detected if empty)
+git = ""
+# require the freshly built binary to pass a --sqlite smoke check before swap
+require_smoke_test = true
+# keep the previous binary for instant rollback
+keep_previous = true
+
+[ml]
+enabled = false            # flips on if a .onnx model is found at startup
+model_path = "models/latest.onnx"
+max_inference_ms = 2.0
+
+[logging]
+level = "info"            # trace | debug | info | warn | error
+journal_dir = "state/trades"

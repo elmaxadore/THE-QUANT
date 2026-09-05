@@ -1,0 +1,280 @@
+OpenBLAS WARNING - could not determine the L2 cache size on this system, assuming 256k
+OpenBLAS WARNING - could not determine the L2 cache size on this system, assuming 256k
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/workspace/python/complete_training_pipeline.py:366: RuntimeWarning: invalid value encountered in divide
+  returns = np.diff(equity_curve) / equity_curve[:-1]
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+Warning: UMAP not available. Using t-SNE for visualization only.
+======================================================================
+THE QUANT v4.1 - COMPLETE TRAINING PIPELINE
+======================================================================
+
+============================================================
+Processing: BTCUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for BTCUSDT (335 days)...
+Fetched 1000 candles for BTCUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for BTCUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for BTCUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=430, Neutral=113, Down=457
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=430, Neutral=111, Down=454
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.279
+✓ Trained mean_reversion strategy for regime 0: F1=0.376
+✓ Trained breakout strategy for regime 0: F1=0.352
+✓ Trained trend strategy for regime 1: F1=0.289
+✓ Trained mean_reversion strategy for regime 1: F1=0.216
+✓ Trained breakout strategy for regime 1: F1=0.321
+✓ Trained trend strategy for regime 2: F1=0.370
+✓ Trained mean_reversion strategy for regime 2: F1=0.400
+✓ Trained breakout strategy for regime 2: F1=0.286
+✓ Trained trend strategy for regime 3: F1=0.348
+✓ Trained mean_reversion strategy for regime 3: F1=0.223
+✓ Trained breakout strategy for regime 3: F1=0.409
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_1_trend.onnx
+✓ Exported strategy: regime_1_mean_reversion.onnx
+✓ Exported strategy: regime_1_breakout.onnx
+✓ Exported strategy: regime_2_trend.onnx
+✓ Exported strategy: regime_2_mean_reversion.onnx
+✓ Exported strategy: regime_2_breakout.onnx
+✓ Exported strategy: regime_3_trend.onnx
+✓ Exported strategy: regime_3_mean_reversion.onnx
+✓ Exported strategy: regime_3_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 31.000
+  Episode 10: Avg Reward = 28.000
+  Episode 20: Avg Reward = 29.000
+  Episode 30: Avg Reward = 29.000
+  Episode 40: Avg Reward = 30.000
+✓ RL Policy trained, final avg reward: 28.700
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 675
+  Total Return: -100.00%
+  Sharpe Ratio: 0.00
+  Max Drawdown: 0.00%
+  Win Rate: 69.5%
+
+============================================================
+Processing: ETHUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for ETHUSDT (335 days)...
+Fetched 1000 candles for ETHUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for ETHUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for ETHUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=466, Neutral=52, Down=482
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=466, Neutral=52, Down=477
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.233
+✓ Trained mean_reversion strategy for regime 0: F1=0.299
+✓ Trained breakout strategy for regime 0: F1=0.190
+[!] Insufficient samples for regime 1: 71
+✓ Trained trend strategy for regime 2: F1=0.559
+✓ Trained mean_reversion strategy for regime 2: F1=0.485
+✓ Trained breakout strategy for regime 2: F1=0.558
+✓ Trained trend strategy for regime 3: F1=0.477
+✓ Trained mean_reversion strategy for regime 3: F1=0.281
+✓ Trained breakout strategy for regime 3: F1=0.459
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_2_trend.onnx
+✓ Exported strategy: regime_2_mean_reversion.onnx
+✓ Exported strategy: regime_2_breakout.onnx
+✓ Exported strategy: regime_3_trend.onnx
+✓ Exported strategy: regime_3_mean_reversion.onnx
+✓ Exported strategy: regime_3_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 31.000
+  Episode 10: Avg Reward = 31.000
+  Episode 20: Avg Reward = 31.000
+  Episode 30: Avg Reward = 30.000
+  Episode 40: Avg Reward = 31.000
+✓ RL Policy trained, final avg reward: 30.200
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 704
+  Total Return: -100.00%
+  Sharpe Ratio: 14.14
+  Max Drawdown: 0.00%
+  Win Rate: 82.2%
+
+============================================================
+Processing: EURUSD=X
+============================================================
+
+[1/6] Fetching market data...
+  Fetching forex data for EURUSD (335 days)...
+Fetched 5645 candles for EURUSD (Forex)
+
+Total data: 5645 candles across 1 symbols
+Error fetching data for EURUSD=X: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 5645 candles for EURUSD (Forex)
+
+Total data: 5645 candles across 1 symbols
+✓ Loaded 5645 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=1164, Neutral=3288, Down=1193
+
+Dropped 5645 rows with NaN values (100.0%)
+
+Final dataset: 0 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=1164, Neutral=3286, Down=1190
+
+Dropped 5640 rows with NaN values (100.0%)
+
+Final dataset: 0 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Traceback (most recent call last):
+  File "/workspace/python/complete_training_pipeline.py", line 548, in <module>
+    results = run_complete_pipeline(
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/python/complete_training_pipeline.py", line 438, in run_complete_pipeline
+    regime_detector.fit(X)
+  File "/workspace/python/unsupervised_insights.py", line 201, in fit
+    features_scaled = self.scaler.fit_transform(features)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/sklearn/utils/_set_output.py", line 319, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/sklearn/base.py", line 969, in fit_transform
+    return self.fit(X, **fit_params).transform(X)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/sklearn/preprocessing/_data.py", line 928, in fit
+    return self.partial_fit(X, y, sample_weight)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/sklearn/base.py", line 1403, in wrapper
+    return fit_method(estimator, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/sklearn/preprocessing/_data.py", line 965, in partial_fit
+    X = validate_data(
+        ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py", line 3038, in validate_data
+    out = check_array(X, input_name="X", **check_params)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py", line 1110, in check_array
+    raise ValueError(
+ValueError: Found array with 0 sample(s) (shape=(0, 74)) while a minimum of 1 is required by StandardScaler.

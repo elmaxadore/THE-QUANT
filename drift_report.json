@@ -1,0 +1,37 @@
+{
+  "configuration": {
+    "psi_threshold_warning": 0.1,
+    "psi_threshold_critical": 0.25,
+    "buckets": 10
+  },
+  "history": [
+    {
+      "feature": "feature_1",
+      "psi": 0.09368627595091816,
+      "status": "STABLE",
+      "message": "No significant drift (PSI=0.094)"
+    },
+    {
+      "feature": "feature_1",
+      "psi": 1.591002503531254,
+      "status": "CRITICAL_DRIFT",
+      "message": "Critical drift detected (PSI=1.591)"
+    },
+    {
+      "feature": "feature_1",
+      "psi": 1.591002503531254,
+      "status": "CRITICAL_DRIFT",
+      "message": "Critical drift detected (PSI=1.591)"
+    },
+    {
+      "feature": "feature_2",
+      "psi": 0.04046381369237121,
+      "status": "STABLE",
+      "message": "No significant drift (PSI=0.040)"
+    }
+  ],
+  "reference_features": [
+    "feature_1",
+    "feature_2"
+  ]
+}

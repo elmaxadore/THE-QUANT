@@ -1,0 +1,217 @@
+{
+  "timestamp": "2026-09-05T11:07:09.222550",
+  "model_type": "gbdt",
+  "feature_count": 73,
+  "features": [
+    "unique_ts",
+    "sma_20",
+    "sma_50",
+    "ema_12",
+    "ema_26",
+    "macd",
+    "macd_signal",
+    "macd_hist",
+    "rsi_14",
+    "rsi_7",
+    "bb_upper",
+    "bb_lower",
+    "bb_middle",
+    "bb_width",
+    "bb_pct",
+    "atr_14",
+    "atr_7",
+    "adx",
+    "plus_di",
+    "minus_di",
+    "stoch_k",
+    "stoch_d",
+    "cci_20",
+    "willr_14",
+    "mom_10",
+    "roc_10",
+    "obv",
+    "volume_sma_20",
+    "volume_ratio",
+    "hl_range",
+    "oc_range",
+    "hl_pct",
+    "oc_pct",
+    "natr",
+    "return_lag_1",
+    "volatility_lag_1",
+    "rsi_lag_1",
+    "vol_ratio_lag_1",
+    "return_lag_2",
+    "volatility_lag_2",
+    "rsi_lag_2",
+    "vol_ratio_lag_2",
+    "return_lag_3",
+    "volatility_lag_3",
+    "rsi_lag_3",
+    "vol_ratio_lag_3",
+    "return_lag_5",
+    "volatility_lag_5",
+    "rsi_lag_5",
+    "vol_ratio_lag_5",
+    "return_lag_10",
+    "volatility_lag_10",
+    "rsi_lag_10",
+    "vol_ratio_lag_10",
+    "return_mean_5",
+    "return_std_5",
+    "price_min_5",
+    "price_max_5",
+    "price_position_5",
+    "return_mean_10",
+    "return_std_10",
+    "return_skew_10",
+    "return_kurt_10",
+    "price_min_10",
+    "price_max_10",
+    "price_position_10",
+    "return_mean_20",
+    "return_std_20",
+    "return_skew_20",
+    "return_kurt_20",
+    "price_min_20",
+    "price_max_20",
+    "price_position_20"
+  ],
+  "training_samples": 768,
+  "test_samples": 192,
+  "test_accuracy": 0.515625,
+  "cv_score": 0.31917010679296814,
+  "best_params": {
+    "learning_rate": 0.1,
+    "max_depth": 5,
+    "n_estimators": 100
+  },
+  "walk_forward_results": {
+    "avg_total_return": NaN,
+    "std_total_return": NaN,
+    "avg_annualized_return": NaN,
+    "std_annualized_return": NaN,
+    "avg_volatility": 0.30887259899007374,
+    "std_volatility": 0.04745955367221959,
+    "avg_sharpe_ratio": NaN,
+    "std_sharpe_ratio": NaN,
+    "avg_max_drawdown": -0.054091594368395404,
+    "std_max_drawdown": 0.01533614855170493,
+    "avg_calmar_ratio": NaN,
+    "std_calmar_ratio": NaN,
+    "avg_win_rate": 0.4744897959183673,
+    "std_win_rate": 0.041762003938124764,
+    "avg_profit_factor": 0.8650098677116831,
+    "std_profit_factor": 0.12365768520711454,
+    "avg_win_loss_ratio": 0.9743020236994859,
+    "std_win_loss_ratio": 0.22286686132089403,
+    "avg_num_trades": 98.0,
+    "std_num_trades": 0.0,
+    "avg_final_equity": 9789.904967598117,
+    "std_final_equity": 203.37713508650384,
+    "avg_initial_capital": 10000.0,
+    "std_initial_capital": 0.0,
+    "accuracy": 0.48,
+    "precision": 0.4198473282442748,
+    "recall": 0.29411764705882354,
+    "f1": 0.34591194968553457,
+    "auc_roc": 0.4593156084456831,
+    "class_distribution": {
+      "-1": 162,
+      "0": 51,
+      "1": 187
+    },
+    "num_splits": 4
+  },
+  "config": {
+    "symbols": [
+      {
+        "symbol": "EURUSD",
+        "type": "forex",
+        "timeframe": "1h"
+      },
+      {
+        "symbol": "GBPUSD",
+        "type": "forex",
+        "timeframe": "1h"
+      },
+      {
+        "symbol": "BTC/USDT",
+        "type": "crypto",
+        "timeframe": "1h"
+      },
+      {
+        "symbol": "^GSPC",
+        "type": "indices",
+        "timeframe": "1d"
+      }
+    ],
+    "data_days": 90,
+    "feature_params": {
+      "use_lags": true,
+      "use_stats": true,
+      "horizon": 5,
+      "threshold": 0.001
+    },
+    "validation": {
+      "train_window": 500,
+      "test_window": 100,
+      "step": 50
+    },
+    "models": {
+      "gbdt": {
+        "enabled": true,
+        "params": {
+          "n_estimators": [
+            100,
+            200
+          ],
+          "max_depth": [
+            3,
+            5,
+            7
+          ],
+          "learning_rate": [
+            0.01,
+            0.1
+          ]
+        }
+      },
+      "mlp": {
+        "enabled": false,
+        "params": {
+          "hidden_layer_sizes": [
+            [
+              50
+            ],
+            [
+              100
+            ],
+            [
+              50,
+              25
+            ]
+          ],
+          "alpha": [
+            0.0001,
+            0.001
+          ],
+          "learning_rate": [
+            "constant",
+            "adaptive"
+          ]
+        }
+      }
+    },
+    "export": {
+      "onnx": true,
+      "save_dir": "../rust_trading_system/models"
+    }
+  },
+  "symbols_trained": [
+    "EURUSD",
+    "GBPUSD",
+    "BTC/USDT",
+    "^GSPC"
+  ]
+}

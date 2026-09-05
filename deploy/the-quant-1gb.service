@@ -1,0 +1,25 @@
+[Unit]
+Description=THE QUANT — autonomous trading desk (continuous paper loop, 1 GB VPS)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/THE-QUANT
+ExecStart=/bin/bash /home/ubuntu/THE-QUANT/deploy/run_desk.sh
+Restart=on-failure
+RestartSec=30
+# --- memory guardrails for a 1 GB box ---
+# Actual usage is ~14 MB per cycle; the cap is a 10x safety net.
+MemoryMax=200M
+MemoryHigh=150M
+StandardOutput=append:/home/ubuntu/THE-QUANT/quant.log
+StandardError=append:/home/ubuntu/THE-QUANT/quant.log
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/ubuntu/THE-QUANT
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

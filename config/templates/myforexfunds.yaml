@@ -1,0 +1,39 @@
+# MyForexFunds — Prop Firm Account Template
+# Two-phase evaluation with generous drawdown allowances and a scaling plan.
+firm: myforexfunds
+variants:
+  evaluation_100k:
+    stage: evaluation
+    profit_target_pct: 10.0
+    time_limit_days: 30
+    max_drawdown_pct: 10.0
+    daily_loss_limit_pct: 5.0
+    consistency_required: false
+    shield_enabled: false
+    scaling_enabled: true
+    min_trading_days: 8
+    leverage: 100
+    strategy_bias: balanced
+    risk_per_trade_pct: 0.5
+    target_monthly_pct: 8.0
+  funded_100k:
+    stage: funded
+    profit_target_pct: ~
+    time_limit_days: ~
+    max_drawdown_pct: 10.0
+    daily_loss_limit_pct: 5.0
+    consistency_required: false
+    shield_enabled: true
+    shield_amount_usd: 100.0
+    scaling_enabled: true
+    scale_after_months: 3
+    scale_increment_pct: 10.0
+    scale_cap_pct: 400.0
+    min_trading_days: 0
+    leverage: 100
+    strategy_bias: conservative
+    risk_per_trade_pct: 0.3
+    target_monthly_pct: 5.0
+    extraction_daily_usd: 25.0
+    profit_split_pct: 75.0
+default_variant: evaluation_100k
