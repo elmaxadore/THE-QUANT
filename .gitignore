@@ -1,43 +1,4 @@
-# Rust
-/target
+```
+target/
 **/*.rs.bk
-
-# Build profile chosen by deploy/install.sh (machine-local)
-.build-features
-
-# Runtime state — never committed. The repo holds the codebase, config and
-# models; live account state is generated at runtime (see `the-quant restore`).
-state/**
-!state/.gitkeep
-
-# Secrets
-*.pem
-*.key
-.env
-.env.*
-
-# Python
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# Historical market data is GENERATED locally (python/data/generate_test_data.py)
-# or downloaded (python/data/download_histdata.py) — never committed.
-python/data/histdata/*.csv
-# Raw tick cache + per-symbol tick dirs (large, regenerable from Dukascopy)
-python/data/histdata_cache/
-python/data/ticks/
-
-# Model artifacts are produced by the offline trainer (python/train)
-models/*
-!models/.gitkeep
-
-# OS / editor
-.DS_Store
-*.swp
-*.swo
-.idea/
-.vscode/
-# scratch output
-nohup.out
+```

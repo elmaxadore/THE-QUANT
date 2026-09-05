@@ -44,6 +44,8 @@ mod tui;
 mod universe;
 #[cfg(feature = "web")]
 mod web;
+#[cfg(feature = "deriv")]
+mod deriv;
 
 use config::Config;
 use onnx::ModelBackend;
