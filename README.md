@@ -4,6 +4,12 @@
   <b>One command. Any machine. A self-scaling, self-updating quant desk.</b>
 </p>
 
+<p align="center">
+  <a href="https://github.com/elmaxadore/THE-QUANT/actions/workflows/worker.yml"><img src="https://github.com/elmaxadore/THE-QUANT/actions/workflows/worker.yml/badge.svg" alt="quant-worker" /></a>
+  <img src="https://img.shields.io/badge/rust-1.75%2B%20stable-dea584?logo=rust&logoColor=white" alt="Rust 1.75+" />
+  <img src="https://img.shields.io/badge/branch-main-2ea44f" alt="single branch: main" />
+</p>
+
 ---
 
 **THE QUANT** is an autonomous quantitative trading system written in Rust with a
@@ -43,10 +49,11 @@ arbitrage system trained and validated on **real historical tick data**
 7. [Risk & compliance circuit breakers](#-risk--compliance-circuit-breakers)
 8. [State management (git-backed)](#-state-management-git-backed)
 9. [Deployment & operations](#-deployment--operations)
-10. [ML pipeline (Python, offline)](#-ml-pipeline-python-offline)
-11. [Testing](#-testing)
-12. [Project layout](#-project-layout)
-13. [Troubleshooting](#-troubleshooting)
+10. [Git workflow & branches](#-git-workflow--branches)
+11. [ML pipeline (Python, offline)](#-ml-pipeline-python-offline)
+12. [Testing](#-testing)
+13. [Project layout](#-project-layout)
+14. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -555,6 +562,23 @@ Go live later: add real accounts to `config/system.toml` (see the
 Customisation guide), set `data_source = "mt5"` (requires an MT5 bridge —
 heavy; needs >= 2 GB RAM), or keep the paper loop as a 24/7 strategy monitor.
 
+---
+
+## 🔀 Git workflow & branches
+
+The repository is **single-branch by design** — all development happens on
+`main`. The only other branches are operational branches created and managed
+by the tooling itself:
+
+| Branch | Created by | Purpose |
+|---|---|---|
+| `main` | humans | Source of truth: code, config, docs, committed models & git-backed state. |
+| `colab-jobs` | `colab/persist.py` on first `enqueue` | Distributed **job queue** — each job is a `<name>/job.json` file moving through `pending → claimed → completed/failed`. Auto-created and self-healing: safe to delete at any time, the next enqueue recreates it. |
+| `colab-artifacts` | `colab/persist.py` | Append-only **output store** (models, reports, data parts) so ephemeral cloud runtimes never lose work. Never deleted. |
+
+The [GitHub Actions worker](.github/workflows/worker.yml) polls the job queue
+every 20 minutes and claims jobs exactly like the Colab/Kaggle/Codespaces
+agents, so all worker platforms coordinate without double execution.
 
 ---
 
@@ -622,7 +646,9 @@ Cloud runtimes are ephemeral (Colab dies after ~12h idle, Kaggle after 12h
 max). The **git job-queue agent** solves this completely — no tunnels, no
 lost work, no babysitting:
 
-- **Job queue** lives on the `colab-jobs` branch of the repo.
+- **Job queue** lives on the `colab-jobs` branch of the repo — it is
+  operational tooling, not development history: auto-created on first enqueue
+  and safe to delete even when drained or mid-flight.
 - **Every artifact is committed to the `colab-artifacts` branch the moment
   it is produced.** If the runtime dies mid-job, everything already
   persisted survives; a restarted agent re-claims the job automatically
@@ -674,19 +700,12 @@ pip install -r python/requirements.txt
 python python/research/train_pipeline.py --start 2023-01-01 --epochs 80
 ```
 
-3. **Inspect Runtime Hardware**:
-   ```bash
-   python colab/colab_cli.py info
-   python colab/colab_cli.py runtimes
-   ```
-
-4. **Run Training & Collect ONNX Models**:
-   ```bash
-   python colab/colab_cli.py train --type mlp --epochs 30
-   # Or run the guided interactive wizard:
-   python colab/colab_cli.py interactive
-   ```
-   Trained `.onnx` model files (`latest.onnx`, `mlp.onnx`) and metrics are automatically downloaded into `THE-QUANT/models/` for sub-2ms Rust inference.
+The same CLI manages remote runtimes without a tunnel: `colab_cli.py info` /
+`runtimes` inspect connected hardware, `colab_cli.py train --type mlp
+--epochs 30` launches training, and `colab_cli.py interactive` is a guided
+wizard. Trained `.onnx` model files (`latest.onnx`, `mlp.onnx`) and metrics
+are automatically downloaded into `THE-QUANT/models/` for sub-2 ms Rust
+inference.
 
 Drop the exported `.onnx` file under `models/` and the Rust core loads it
 at boot (`onnx::load_backend`), falling back to the transparent rule-based
