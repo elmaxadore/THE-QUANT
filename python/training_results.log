@@ -1,0 +1,113 @@
+OpenBLAS WARNING - could not determine the L2 cache size on this system, assuming 256k
+OpenBLAS WARNING - could not determine the L2 cache size on this system, assuming 256k
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.12/site-packages/sklearn/utils/validation.py:2827: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+Warning: UMAP not available. Using t-SNE for visualization only.
+======================================================================
+THE QUANT v4.1 - COMPLETE TRAINING PIPELINE
+======================================================================
+
+============================================================
+Processing: BTCUSDT
+============================================================
+
+[1/6] Fetching market data...
+  Fetching crypto data for BTCUSDT (700 days)...
+Fetched 1000 candles for BTCUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+Error fetching data for BTCUSDT: '>=' not supported between instances of 'numpy.ndarray' and 'Timestamp'
+Fetched 1000 candles for BTCUSDT (Crypto)
+
+Total data: 1000 candles across 1 symbols
+✓ Loaded 1000 candles
+
+[2/6] Engineering features...
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=471, Neutral=131, Down=398
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 946 rows, 84 columns
+Identified 73 feature columns
+[!] Target variable not found, creating from price data
+Starting feature engineering...
+Added 33 technical indicator features
+Added 20 lag features
+Added 19 statistical features
+Added target variable with 5-period horizon and 0.10% threshold
+Target distribution: Up=471, Neutral=131, Down=393
+
+Dropped 54 rows with NaN values (5.4%)
+
+Final dataset: 941 rows, 85 columns
+Identified 74 feature columns
+✓ Created 74 features
+
+[3/6] Detecting market regimes...
+Could not compute clustering quality metrics: name 'features_scaled' is not defined
+✓ Detected 4 regimes
+  Regime 0: 0.0% occurrence
+  Regime 1: 0.0% occurrence
+  Regime 2: 0.0% occurrence
+  Regime 3: 0.0% occurrence
+
+[4/6] Training regime-specific strategies...
+✓ Trained trend strategy for regime 0: F1=0.353
+✓ Trained mean_reversion strategy for regime 0: F1=0.342
+✓ Trained breakout strategy for regime 0: F1=0.329
+✓ Trained trend strategy for regime 1: F1=0.420
+✓ Trained mean_reversion strategy for regime 1: F1=0.629
+✓ Trained breakout strategy for regime 1: F1=0.431
+[!] Insufficient samples for regime 2: 99
+✓ Trained trend strategy for regime 3: F1=0.200
+✓ Trained mean_reversion strategy for regime 3: F1=0.246
+✓ Trained breakout strategy for regime 3: F1=0.183
+✓ Exported strategy: regime_0_trend.onnx
+✓ Exported strategy: regime_0_mean_reversion.onnx
+✓ Exported strategy: regime_0_breakout.onnx
+✓ Exported strategy: regime_1_trend.onnx
+✓ Exported strategy: regime_1_mean_reversion.onnx
+✓ Exported strategy: regime_1_breakout.onnx
+✓ Exported strategy: regime_3_trend.onnx
+✓ Exported strategy: regime_3_mean_reversion.onnx
+✓ Exported strategy: regime_3_breakout.onnx
+
+[5/6] Optimizing risk management with RL...
+  Episode 0: Avg Reward = 31.000
+  Episode 10: Avg Reward = 25.000
+  Episode 20: Avg Reward = 30.000
+  Episode 30: Avg Reward = 25.000
+  Episode 40: Avg Reward = 27.000
+✓ RL Policy trained, final avg reward: 26.900
+
+[6/6] Backtesting strategies...
+
+Backtest Results:
+  Total Trades: 505
+  Total Return: -100.00%
+  Sharpe Ratio: 10.87
+  Max Drawdown: 0.00%
+  Win Rate: 74.5%
+
+======================================================================
+PIPELINE COMPLETE
+======================================================================
+Results saved to: /results/training_results.json
+Models saved to: /models
+
+SUMMARY:
+  BTCUSDT:
+    - Return: -100.00%
+    - Sharpe: 10.87
+    - Trades: 505
