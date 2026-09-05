@@ -731,13 +731,26 @@ THE-QUANT/
 │   ├── resource.rs             # tier detection + per-module memory budgets
 │   ├── execution.rs            # order execution scaffolding (MT5 bridge)
 │   ├── features.rs, regime.rs, strategy.rs, security.rs, util.rs, web.rs
-├── deploy/
-│   ├── install.sh              # one-line installer (Rust + Python + MT5 + EA)
-│   ├── mt5_ea.mq5              # MT5 bar-export connector (EA → shared CSV files)
-│   ├── the-quant.service       # tier-aware systemd unit
-│   └── update.sh               # 24 h auto-update (git pull + rebuild)
-├── python/                     # offline training (torch/sklearn → ONNX)
-└── state/                      # git-backed trading state
+├── python/                     # offline ML pipeline (torch/sklearn → ONNX)
+│   ├── data/                   #   market-data downloaders (Dukascopy, HistData)
+│   ├── train/                  #   model trainers (GBDT, MLP, advanced)
+│   ├── research/               #   walk-forward training pipeline + tests
+│   └── unsupervised_results/   #   regime-detection reference results
+├── python_training/            # real-market training pipeline (Deriv feed)
+│   └── TRAINING_GUIDE.md       #   end-to-end training guide
+├── colab/                      # distributed training workers (Colab/Kaggle/Actions)
+│   ├── agent.py, colab_worker.py   # job-claiming worker agent
+│   ├── persist.py              #   job-queue / artifacts git-branch I/O
+│   └── tests/                  #   worker test suite
+├── deploy/                     # install.sh (one-line installer), systemd units,
+│                               #   MT5 bridge (mt5_ea.mq5), autopilot.sh,
+│                               #   coordinator.py, status.sh, update.sh
+├── docs/                       # DERIV_INTEGRATION.md, REMOTE_TRAINING.md
+├── migrations/                 # DB schema (init.sql)
+├── models/                     # trained ONNX models + prop-firm strategy bundles
+├── rust_trading_system/models/ # models produced by python_training (real market data)
+├── reports/                    # generated reports (placeholder)
+└── state/                      # git-backed trading state (trades/, accounts/)
 ```
 
 ---
