@@ -1,0 +1,10 @@
+{
+  "model_type": "mlp",
+  "features": 12,
+  "training_samples": 37430,
+  "epochs": 50,
+  "final_loss": 0.6810222920013436,
+  "timestamp": "2026-09-05T11:31:35.134937",
+  "data_source": "synthetic",
+  "symbol": null
+}
