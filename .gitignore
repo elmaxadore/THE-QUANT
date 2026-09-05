@@ -1,4 +1,44 @@
 ```
-target/
-**/*.rs.bk
+# Compiled Python files
+*.pyc
+__pycache__/
+
+# Model files (if they are large binary files)
+*.onnx
+*.pkl
+*.pt
+
+# Logs
+*.log
+training_log*.txt
+
+# Dependencies
+.venv/
+venv/
+env/
+
+# Temporary and cache files
+*.tmp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# IDE specific
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
 ```

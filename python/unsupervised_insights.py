@@ -56,16 +56,23 @@ except ImportError:
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Import from training module
 try:
     from python_training.data_ingestion import get_market_data
     from python_training.feature_engineering import prepare_features, get_feature_columns
 except ImportError:
-    # Fallback imports
-    sys.path.insert(0, str(Path(__file__).parent.parent / 'python_training'))
-    from data_ingestion import get_market_data
-    from feature_engineering import prepare_features, get_feature_columns
+    # Fallback imports - try direct import from workspace root
+    try:
+        sys.path.insert(0, '/workspace')
+        from python_training.data_ingestion import get_market_data
+        from python_training.feature_engineering import prepare_features, get_feature_columns
+    except ImportError:
+        print("Warning: Could not import from python_training, using built-in methods")
+        get_market_data = None
+        prepare_features = None
+        get_feature_columns = None
 
 
 def fetch_market_data(symbol: str, start_date: str, end_date: str) -> Optional[pd.DataFrame]:
