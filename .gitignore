@@ -1,19 +1,18 @@
-# --- Python ---
+```
+# Build artifacts and results
+backtest_results/
+
+# Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
+*.pyc
+*.pyo
+*.pyd
+.Python
 venv/
-
-# --- Training artifacts / generated output ---
-*.log
-training_log*.txt
-drift_report.json
-/unsupervised_results/
-
-# --- Rust ---
-/target/
-
-# --- OS / editor junk ---
-.DS_Store
-Thumbs.db
+env/
+ENV/
+.venv/
+.env
+.env.local
+.env.*
+```
