@@ -1,0 +1,15 @@
+{
+  "model_version": "v4.2-scalping-optimized",
+  "strategy_type": "Regime-Aware Momentum + RL Sizing",
+  "avg_daily_pnl": 33.61350546549858,
+  "total_profit": 2151.264349791909,
+  "ending_balance": 7151.264349791909,
+  "win_rate": 1.0,
+  "total_days": 65,
+  "optimal_params": {
+    "risk_pct": 0.04,
+    "rsi_long_threshold": 35,
+    "rsi_short_threshold": 55
+  },
+  "timestamp": "2026-09-14T19:18:23.756951"
+}
