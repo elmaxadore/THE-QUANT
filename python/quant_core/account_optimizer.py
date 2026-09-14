@@ -15,10 +15,28 @@ import json
 
 class AccountTier(Enum):
     """Prop firm account tiers based on maximum drawdown limits."""
-    TIER_5PCT = 5.0      # 5% maximum drawdown
-    TIER_8PCT = 8.0      # 8% maximum drawdown
-    TIER_10PCT = 10.0    # 10% maximum drawdown
-    TIER_12PCT = 12.0    # 12% maximum drawdown
+    TIER_5PCT = 5.0      # 5% maximum drawdown (standard)
+    TIER_8PCT = 8.0      # 8% maximum drawdown (standard)
+    TIER_10PCT = 10.0    # 10% maximum drawdown (standard)
+    TIER_12PCT = 12.0    # 12% maximum drawdown (standard)
+    
+    # Instant Funding Account Profiles (unique IDs, balance stored separately)
+    TIER_5K_INSTANT = 5.1     # $5k Instant: 5% max DD, 4% daily DD
+    TIER_10K_INSTANT = 5.2    # $10k Instant: 5% max DD, 4% daily DD
+    TIER_25K_INSTANT = 5.3    # $25k Instant: 5% max DD, 4% daily DD
+    TIER_50K_INSTANT = 5.4    # $50k Instant: 5% max DD, 4% daily DD
+    TIER_100K_INSTANT = 4.1   # $100k Instant: 4% max DD, 3% daily DD
+    
+    @property
+    def max_drawdown_value(self) -> float:
+        """Get the actual max drawdown percentage for this tier."""
+        if self == AccountTier.TIER_100K_INSTANT:
+            return 4.0
+        elif self in [AccountTier.TIER_5K_INSTANT, AccountTier.TIER_10K_INSTANT, 
+                      AccountTier.TIER_25K_INSTANT, AccountTier.TIER_50K_INSTANT]:
+            return 5.0
+        else:
+            return self.value
 
 
 @dataclass
@@ -90,13 +108,55 @@ class AccountOptimizer:
     - Real-time risk monitoring and alerts
     """
     
-    def __init__(self, config_path: Optional[str] = None):
+    # Default balance configurations for instant funding accounts
+    INSTANT_BALANCES = {
+        AccountTier.TIER_5K_INSTANT: 5000.0,
+        AccountTier.TIER_10K_INSTANT: 10000.0,
+        AccountTier.TIER_25K_INSTANT: 25000.0,
+        AccountTier.TIER_50K_INSTANT: 50000.0,
+        AccountTier.TIER_100K_INSTANT: 100000.0,
+    }
+    
+    def __init__(self, tier: AccountTier = AccountTier.TIER_5PCT, account_id: str = "default"):
         self.accounts: Dict[str, AccountConfig] = {}
         self.positions: Dict[str, List[PositionInfo]] = {}
         self.correlation_matrix: Optional[np.ndarray] = None
         self.symbols: List[str] = []
-        self.config_path = config_path
-        self._load_config()
+        
+        # Determine if this is an instant funding account
+        is_instant = tier in self.INSTANT_BALANCES
+        
+        if is_instant:
+            # Instant funding configuration
+            initial_balance = self.INSTANT_BALANCES.get(tier, 5000.0)
+            daily_dd = 4.0 if tier == AccountTier.TIER_100K_INSTANT else 4.0  # 4% daily for most instant accounts
+            total_dd = tier.max_drawdown_value
+            
+            config = AccountConfig(
+                account_id=account_id,
+                initial_equity=initial_balance,
+                current_equity=initial_balance,
+                max_drawdown_pct=total_dd,
+                daily_drawdown_limit_pct=daily_dd,
+                risk_per_trade_pct=0.75,  # Slightly lower risk for instant accounts
+                max_positions=3,
+                tier=tier
+            )
+        else:
+            # Standard evaluation/challenge configuration
+            config = AccountConfig(
+                account_id=account_id,
+                initial_equity=100000.0,  # Default standard account
+                current_equity=100000.0,
+                max_drawdown_pct=tier.value,
+                daily_drawdown_limit_pct=5.0,
+                risk_per_trade_pct=1.0,
+                max_positions=5,
+                tier=tier
+            )
+        
+        self.register_account(config)
+        self._current_account_id = account_id
         
     def _load_config(self):
         """Load configuration from file if provided."""
@@ -156,7 +216,79 @@ class AccountOptimizer:
         
         return max(0, remaining_headroom), max(0, remaining_pct)
     
+    def check_daily_drawdown_breach(self, current_equity: float) -> bool:
+        """
+        Check if the current equity breaches the daily drawdown limit.
+        
+        Args:
+            current_equity: Current account equity
+            
+        Returns:
+            True if daily drawdown limit is breached, False otherwise
+        """
+        account_id = self._current_account_id
+        if account_id not in self.accounts:
+            return False
+        
+        account = self.accounts[account_id]
+        daily_loss = max(0, account.initial_equity - current_equity)
+        daily_limit = account.initial_equity * (account.daily_drawdown_limit_pct / 100)
+        
+        return daily_loss >= daily_limit
+    
     def calculate_dynamic_position_size(
+        self,
+        symbol: str,
+        current_price: float,
+        volatility_factor: float = 1.0,
+        correlation_factor: float = 1.0,
+        win_rate: float = 0.55,
+        avg_win_loss_ratio: float = 1.5
+    ) -> float:
+        """
+        Simplified dynamic position sizing for instant funding accounts.
+        
+        Args:
+            symbol: Trading symbol
+            current_price: Current asset price
+            volatility_factor: Market volatility multiplier (1.0 = normal)
+            correlation_factor: Correlation penalty (1.0 = no correlation)
+            win_rate: Strategy win rate
+            avg_win_loss_ratio: Win/Loss ratio
+            
+        Returns:
+            Optimal position size in units
+        """
+        account_id = self._current_account_id
+        if account_id not in self.accounts:
+            return 0.0
+        
+        account = self.accounts[account_id]
+        
+        # Check available headroom first
+        if self.check_daily_drawdown_breach(account.current_equity):
+            return 0.0  # Stop trading if breach
+        
+        # Base risk calculation
+        base_risk = account.current_equity * (account.risk_per_trade_pct / 100)
+        
+        # Apply volatility and correlation adjustments
+        adjusted_risk = base_risk / volatility_factor * correlation_factor
+        
+        # Kelly-inspired sizing
+        edge = win_rate - (1 - win_rate) / avg_win_loss_ratio
+        kelly_fraction = max(0, edge / avg_win_loss_ratio) * 0.5  # Half-Kelly
+        
+        # Final position size
+        position_value = adjusted_risk * (1 + kelly_fraction)
+        quantity = position_value / current_price
+        
+        # Apply maximum position limit (20% of equity for instant accounts)
+        max_position = (account.current_equity * 0.20) / current_price
+        
+        return min(quantity, max_position)
+
+    def calculate_dynamic_position_size_full(
         self,
         account_id: str,
         symbol: str,
